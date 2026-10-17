@@ -1,0 +1,437 @@
+/*
+ * Raccoon interface tokens — the values, and ONLY the values.
+ *
+ * They are reused verbatim from the approved `Design/` prototype (the instrument look and its four
+ * independent appearance axes) and are owned here by the component interface.
+ *
+ * ⚠️ NOTHING BUT TOKENS BELONGS IN THIS FILE. The reset, the base element styles and the shared
+ * utilities moved to `theme.css` on 2026-10-07, where they sit inside `@layer base` — an element
+ * rule written here would be unlayered, and unlayered CSS outranks every Tailwind utility, so a
+ * single `h1` rule here would quietly beat every `text-*` class in the product.
+ *
+ * ⚠️ AND THE COMPONENTS NO LONGER READ THESE NAMES DIRECTLY. `theme.css` maps each token onto a
+ * Tailwind name through `@theme inline`, so a component asks for `bg-surface` and gets
+ * `var(--surface)`; the axes keep working because the mapping is by reference rather than by value.
+ *
+ * Appearance axes, each driven by a `data-*` attribute on the document element:
+ *   data-theme     light | dark
+ *   data-palette   graphite | forest | terminal | amber | kurenai | sakura | fuji | mizu | matcha | wakaba
+ *   data-intensity calm | vivid
+ *   data-scale     0.9 | 1 | 1.15 | 1.3   (scales type, spacing, controls and columns together)
+ *   data-font      inter | onest | code | hybrid
+ */
+
+:root {
+  /* Appearance axis variables (defaults; overridden by the data-* selectors below). */
+  --ui-scale: 1;
+  --font-ui: Inter, system-ui, sans-serif;
+  --font-heading: var(--font-ui);
+  --font-control: var(--font-ui);
+  --accent-line: var(--accent-text);
+
+  /* Spacing scale. */
+  --space-1: calc(4px * var(--ui-scale));
+  --space-2: calc(8px * var(--ui-scale));
+  --space-3: calc(12px * var(--ui-scale));
+  --space-4: calc(16px * var(--ui-scale));
+  --space-5: calc(24px * var(--ui-scale));
+  --space-6: calc(32px * var(--ui-scale));
+  --space-7: calc(48px * var(--ui-scale));
+
+  /* Type scale. */
+  --text-2xs: calc(11px * var(--ui-scale));
+  --text-xs: calc(12px * var(--ui-scale));
+  --text-sm: calc(13px * var(--ui-scale));
+  --text-base: calc(14px * var(--ui-scale));
+  --text-md: calc(16px * var(--ui-scale));
+  --text-lg: calc(19px * var(--ui-scale));
+  --text-xl: calc(23px * var(--ui-scale));
+
+  /* Geometry. */
+  --radius-control: calc(6px * var(--ui-scale));
+  --radius-surface: calc(8px * var(--ui-scale));
+  --radius-dialog: calc(12px * var(--ui-scale));
+  /*
+   * The one control height — every button, field and select measures itself against it, so a row of
+   * them lines up without any of them naming a number of its own.
+   *
+   * `--control-option` is for an option inside a strip (a segment, a chip): a step shorter, so the
+   * strip reads as one control rather than as a stack of buttons. `--touch-target` is the floor for
+   * a control with no label to widen it — an icon-only button — which is the only one a finger can
+   * actually miss.
+   */
+  --control: calc(32px * var(--ui-scale));
+  --control-option: calc(24px * var(--ui-scale));
+  --touch-target: calc(32px * var(--ui-scale));
+  --rail: calc(236px * var(--ui-scale));
+  --inspector: calc(340px * var(--ui-scale));
+
+  /* Light theme colours (graphite palette is the base accent). The page sits a step below its white
+     surfaces and every line is visible, so the structure reads without squinting; text and status
+     colours stay clear of WCAG AA on both the page and a surface. */
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --side: #e3e8ee;
+  --well: #e9edf2;
+  --ink: #0b1520;
+  --secondary: #354452;
+  --muted: #536170;
+  --line: #ccd4dd;
+  --line-strong: #8391a0;
+  --accent: #1d6c97;
+  --accent-text: #135a80;
+  --accent-soft: #d9eaf5;
+  --good: #11744a;
+  --good-soft: #d7f0e3;
+  --warn: #965500;
+  --warn-soft: #fcebcf;
+  --danger: #b3202e;
+  --danger-soft: #fadde1;
+  /* A file's family on its mark: a band of colour with the extension in white. Categories, not verdicts — so mid tones
+     that hold white text on a light page and a dark one alike, and one set for both themes. */
+  --file-document: #2f6fb5;
+  --file-pdf: #c0392b;
+  --file-book: #4f6b1f;
+  --file-sheet: #22804e;
+  --file-code: #b8641c;
+  --file-data: #7a4fb5;
+  --file-markup: #18808a;
+  --file-image: #b5487a;
+  --file-media: #4b5bb5;
+  --file-archive: #7f6236;
+  --file-text: #5f6b7a;
+  --file-other: #6b7280;
+  /* A verdict, not a decoration: blue lets through, red refuses. Neither follows the palette accent, so
+     "allowed" reads the same under every theme. */
+  --allow: #1758b8;
+  --allow-soft: #dde8fb;
+  --deny: #b3202e;
+  --deny-soft: #fadde1;
+  /* A place, not a status: where a policy rule runs. Violet is the door of the corpus — a source runs those rules —
+     and teal is the processing pipeline — a profile runs those. Neither is used for anything else, so a badge in either
+     colour always answers «at the door, or in the pipeline?», and the thing that runs it wears the same colour. */
+  --place-door: #6a3db0;
+  --place-door-soft: #eee6fa;
+  --place-pipeline: #0b6b62;
+  --place-pipeline-soft: #d9f0ec;
+  --on-ink: #ffffff;
+  --scrim: #0b152480;
+  /* The ground under a page another product embeds here. That page brings its own light design and
+     paints itself transparent, so it stays light in both themes — never redefined under dark. */
+  --embedded-ground: #ffffff;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #141b21;
+  --surface: #1a232b;
+  --side: #10171d;
+  --well: #111a21;
+  --ink: #e3eaf0;
+  --secondary: #abb9c4;
+  --muted: #94a4b0;
+  --line: #303e49;
+  --line-strong: #60717e;
+  --accent: #91b8cc;
+  --accent-text: #a9cfe2;
+  --accent-soft: #243b49;
+  --good: #a0d8bc;
+  --good-soft: #20392e;
+  --warn: #edc28a;
+  --warn-soft: #3b3020;
+  --danger: #f5afb5;
+  --danger-soft: #42282e;
+  --allow: #9cc0f5;
+  --allow-soft: #1f2f4a;
+  --deny: #f5afb5;
+  --deny-soft: #42282e;
+  --place-door: #cbb4f2;
+  --place-door-soft: #2e2541;
+  --place-pipeline: #8ad6ca;
+  --place-pipeline-soft: #173834;
+  --on-ink: #111a21;
+  color-scheme: dark;
+}
+
+/* Interface size axis. */
+:root[data-scale="0.9"] {
+  --ui-scale: 0.9;
+}
+:root[data-scale="1.15"] {
+  --ui-scale: 1.15;
+}
+:root[data-scale="1.3"] {
+  --ui-scale: 1.3;
+}
+
+/* Font axis. */
+:root[data-font="onest"] {
+  --font-ui: Onest, Inter, system-ui, sans-serif;
+}
+:root[data-font="code"] {
+  --font-ui: "JetBrains Mono", monospace;
+}
+:root[data-font="hybrid"] {
+  --font-ui: Onest, Inter, system-ui, sans-serif;
+  --font-heading: "JetBrains Mono", monospace;
+  --font-control: "JetBrains Mono", monospace;
+}
+
+/* Colour-scheme axis — the accent triad only; everything else stays on the theme tokens. */
+[data-palette="forest"] {
+  --accent: #4b7a17;
+  --accent-text: #3b6112;
+  --accent-soft: #e1eecf;
+}
+[data-palette="terminal"] {
+  --accent: #0b8670;
+  --accent-text: #076a58;
+  --accent-soft: #d3efe7;
+}
+[data-palette="amber"] {
+  --accent: #b06405;
+  --accent-text: #8a4c03;
+  --accent-soft: #f9e4c3;
+}
+[data-theme="dark"][data-palette="forest"] {
+  --accent: #c1d28b;
+  --accent-text: #cadba1;
+  --accent-soft: #2b3323;
+}
+[data-theme="dark"][data-palette="terminal"] {
+  --accent: #7fd5bd;
+  --accent-text: #9fe3d2;
+  --accent-soft: #1d3831;
+}
+[data-theme="dark"][data-palette="amber"] {
+  --accent: #e8bf85;
+  --accent-text: #f0cda0;
+  --accent-soft: #3a3022;
+}
+
+/*
+ * Colour-scheme and intensity axes.
+ *
+ * A scheme is a hue; the intensity is how loudly it speaks. ⚠️ The intensity NEVER changes which hue
+ * a scheme is — graphite is the same blue at both, terminal the same teal — because a scheme that
+ * changed colour with its volume would be a different scheme rather than a louder one.
+ *
+ * Vivid also brings schemes of its own: Kitsu's set, less the two left out there (ao, sumi) and less
+ * ember, which is the orange amber already is and so is amber's loud voice rather than an extra
+ * option. Each carries a calm triad too, so turning the intensity down on one keeps the scheme
+ * instead of taking it away; the appearance menu offers them while vivid is on, and goes on offering
+ * whichever one is in force.
+ *
+ * ⚠️ EVERYTHING BELOW THIS COMMENT, UP TO THE RESET, IS GENERATED —
+ * `node scripts/derive-accents.mjs` prints it, each colour moved along its own hue until it clears
+ * its bar on this file's own grounds (text 4.5:1, a mark 3:1, on both the page and a surface). Edit
+ * the hues in that script and paste its output; a value corrected by hand here is a value nothing
+ * checks. The four calm triads above are the exception — they are the approved Design prototype's
+ * own, hand-tuned, and are not generated.
+ */
+/* ── calm, for the schemes that arrived with the vivid set ──────────────────────────────── */
+[data-palette="kurenai"] {
+  --accent: #983339;
+  --accent-text: #983339;
+  --accent-soft: #f1e2e3;
+} /* #983339 · mark 6.46:1 on the page · text 7.32:1 on a surface */
+[data-palette="sakura"] {
+  --accent: #a82e5c;
+  --accent-text: #a82e5c;
+  --accent-soft: #f3e2e8;
+} /* #a82e5c · mark 5.77:1 on the page · text 6.54:1 on a surface */
+[data-palette="fuji"] {
+  --accent: #6534d3;
+  --accent-text: #6534d3;
+  --accent-soft: #e9e3f9;
+} /* #6534d3 · mark 6.21:1 on the page · text 7.03:1 on a surface */
+[data-palette="mizu"] {
+  --accent: #1a6066;
+  --accent-text: #1a6066;
+  --accent-soft: #dfe9ea;
+} /* #1a6066 · mark 6.37:1 on the page · text 7.22:1 on a surface */
+[data-palette="matcha"] {
+  --accent: #2e6847;
+  --accent-text: #2e6847;
+  --accent-soft: #e2eae5;
+} /* #2e6847 · mark 5.82:1 on the page · text 6.59:1 on a surface */
+[data-palette="wakaba"] {
+  --accent: #5b7322;
+  --accent-text: #5b7322;
+  --accent-soft: #e8ebe0;
+} /* #5b7322 · mark 4.73:1 on the page · text 5.36:1 on a surface */
+
+[data-theme="dark"][data-palette="kurenai"] {
+  --accent: #a75257;
+  --accent-text: #ba767a;
+  --accent-soft: #33262e;
+} /* #983339 · mark 3.30:1 on the page · text 4.52:1 on a surface */
+[data-theme="dark"][data-palette="sakura"] {
+  --accent: #b2456e;
+  --accent-text: #c36f8f;
+  --accent-soft: #362535;
+} /* #a82e5c · mark 3.28:1 on the page · text 4.54:1 on a surface */
+[data-theme="dark"][data-palette="fuji"] {
+  --accent: #7b50d9;
+  --accent-text: #9877e2;
+  --accent-soft: #29264d;
+} /* #6534d3 · mark 3.30:1 on the page · text 4.60:1 on a surface */
+[data-theme="dark"][data-palette="mizu"] {
+  --accent: #38757a;
+  --accent-text: #619195;
+  --accent-soft: #1a2f37;
+} /* #1a6066 · mark 3.30:1 on the page · text 4.54:1 on a surface */
+[data-theme="dark"][data-palette="matcha"] {
+  --accent: #437759;
+  --accent-text: #69927b;
+  --accent-soft: #1e3131;
+} /* #2e6847 · mark 3.33:1 on the page · text 4.55:1 on a surface */
+[data-theme="dark"][data-palette="wakaba"] {
+  --accent: #5d7424;
+  --accent-text: #7d9050;
+  --accent-soft: #273329;
+} /* #5b7322 · mark 3.30:1 on the page · text 4.53:1 on a surface */
+
+/* ── vivid: every scheme, its own hue said louder ───────────────────────────────────────── */
+[data-intensity="vivid"][data-palette="graphite"] {
+  --accent: #1791d3;
+  --accent-text: #1274a9;
+  --accent-soft: #dff0f9;
+} /* #1791d3 · mark 3.08:1 on the page · text 5.13:1 on a surface */
+[data-intensity="vivid"][data-palette="forest"] {
+  --accent: #599b11;
+  --accent-text: #46790d;
+  --accent-soft: #eaf5de;
+} /* #6ab814 · mark 3.03:1 on the page · text 5.25:1 on a surface */
+[data-intensity="vivid"][data-palette="terminal"] {
+  --accent: #0c9d83;
+  --accent-text: #0a7b67;
+  --accent-soft: #ddf6f1;
+} /* #0fbd9e · mark 3.01:1 on the page · text 5.20:1 on a surface */
+[data-intensity="vivid"][data-palette="amber"] {
+  --accent: #eb5c19;
+  --accent-text: #ba4914;
+  --accent-soft: #ffe9df;
+} /* #ff641b · mark 3.05:1 on the page · text 5.18:1 on a surface */
+[data-intensity="vivid"][data-palette="kurenai"] {
+  --accent: #d92b36;
+  --accent-text: #d02934;
+  --accent-soft: #fae1e3;
+} /* #d92b36 · mark 4.26:1 on the page · text 5.19:1 on a surface */
+[data-intensity="vivid"][data-palette="sakura"] {
+  --accent: #e62d72;
+  --accent-text: #cd2865;
+  --accent-soft: #fce2eb;
+} /* #e62d72 · mark 3.72:1 on the page · text 5.14:1 on a surface */
+[data-intensity="vivid"][data-palette="fuji"] {
+  --accent: #8b5cf6;
+  --accent-text: #7c52db;
+  --accent-soft: #efe8fe;
+} /* #8b5cf6 · mark 3.74:1 on the page · text 5.14:1 on a surface */
+[data-intensity="vivid"][data-palette="mizu"] {
+  --accent: #0e8b96;
+  --accent-text: #0c7983;
+  --accent-soft: #ddeff0;
+} /* #0e8b96 · mark 3.60:1 on the page · text 5.15:1 on a surface */
+[data-intensity="vivid"][data-palette="matcha"] {
+  --accent: #2d9459;
+  --accent-text: #267c4b;
+  --accent-soft: #e2f0e8;
+} /* #2d9459 · mark 3.38:1 on the page · text 5.16:1 on a surface */
+[data-intensity="vivid"][data-palette="wakaba"] {
+  --accent: #719716;
+  --accent-text: #597711;
+  --accent-soft: #edf3df;
+} /* #7da818 · mark 3.02:1 on the page · text 5.16:1 on a surface */
+
+[data-theme="dark"][data-intensity="vivid"][data-palette="graphite"] {
+  --accent: #1791d3;
+  --accent-text: #1791d3;
+  --accent-soft: #19394d;
+} /* #1791d3 · mark 4.99:1 on the page · text 4.57:1 on a surface */
+[data-theme="dark"][data-intensity="vivid"][data-palette="forest"] {
+  --accent: #6ab814;
+  --accent-text: #6ab814;
+  --accent-soft: #2a4126;
+} /* #6ab814 · mark 7.02:1 on the page · text 6.43:1 on a surface */
+[data-theme="dark"][data-intensity="vivid"][data-palette="terminal"] {
+  --accent: #0fbd9e;
+  --accent-text: #0fbd9e;
+  --accent-soft: #184242;
+} /* #0fbd9e · mark 7.28:1 on the page · text 6.67:1 on a surface */
+[data-theme="dark"][data-intensity="vivid"][data-palette="amber"] {
+  --accent: #ff641b;
+  --accent-text: #ff641b;
+  --accent-soft: #483028;
+} /* #ff641b · mark 5.87:1 on the page · text 5.37:1 on a surface */
+[data-theme="dark"][data-intensity="vivid"][data-palette="kurenai"] {
+  --accent: #d92b36;
+  --accent-text: #e25e66;
+  --accent-soft: #40252d;
+} /* #d92b36 · mark 3.60:1 on the page · text 4.57:1 on a surface */
+[data-theme="dark"][data-intensity="vivid"][data-palette="sakura"] {
+  --accent: #e62d72;
+  --accent-text: #ea4f89;
+  --accent-soft: #432539;
+} /* #e62d72 · mark 4.12:1 on the page · text 4.53:1 on a surface */
+[data-theme="dark"][data-intensity="vivid"][data-palette="fuji"] {
+  --accent: #8b5cf6;
+  --accent-text: #9970f7;
+  --accent-soft: #312e54;
+} /* #8b5cf6 · mark 4.10:1 on the page · text 4.56:1 on a surface */
+[data-theme="dark"][data-intensity="vivid"][data-palette="mizu"] {
+  --accent: #0e8b96;
+  --accent-text: #2697a1;
+  --accent-soft: #183840;
+} /* #0e8b96 · mark 4.26:1 on the page · text 4.57:1 on a surface */
+[data-theme="dark"][data-intensity="vivid"][data-palette="matcha"] {
+  --accent: #2d9459;
+  --accent-text: #3a9a63;
+  --accent-soft: #1e3a34;
+} /* #2d9459 · mark 4.54:1 on the page · text 4.53:1 on a surface */
+[data-theme="dark"][data-intensity="vivid"][data-palette="wakaba"] {
+  --accent: #7da818;
+  --accent-text: #7da818;
+  --accent-soft: #2e3e27;
+} /* #7da818 · mark 6.19:1 on the page · text 5.67:1 on a surface */
+
+/* ── the swatch each option is painted in: that scheme's mark in the dark theme ─────────── */
+:root {
+  --swatch-graphite: #91b8cc;
+  --swatch-forest: #c1d28b;
+  --swatch-terminal: #7fd5bd;
+  --swatch-amber: #e8bf85;
+  --swatch-kurenai: #a75257;
+  --swatch-sakura: #b2456e;
+  --swatch-fuji: #7b50d9;
+  --swatch-mizu: #38757a;
+  --swatch-matcha: #437759;
+  --swatch-wakaba: #5d7424;
+}
+[data-intensity="vivid"] {
+  --swatch-graphite: #1791d3;
+  --swatch-forest: #6ab814;
+  --swatch-terminal: #0fbd9e;
+  --swatch-amber: #ff641b;
+  --swatch-kurenai: #d92b36;
+  --swatch-sakura: #e62d72;
+  --swatch-fuji: #8b5cf6;
+  --swatch-mizu: #0e8b96;
+  --swatch-matcha: #2d9459;
+  --swatch-wakaba: #7da818;
+}
+
+
+/*
+ * A finger is not a cursor, so controls grow — but only to what a finger needs. Taking every control
+ * to 44px took a row of five filters to 83px and left the search field, which names its own height,
+ * a visible step shorter than the button beside it. A labelled control is wide enough to hit at 36px;
+ * an icon-only one, which has no label to widen it, takes the full 44 in both directions.
+ */
+@media (pointer: coarse) {
+  :root {
+    --control: calc(36px * var(--ui-scale));
+    --control-option: calc(30px * var(--ui-scale));
+    --touch-target: calc(44px * var(--ui-scale));
+  }
+}

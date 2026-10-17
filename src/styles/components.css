@@ -1,0 +1,535 @@
+/*
+ * The handful of looks a utility class cannot express — and nothing else.
+ *
+ * ⚠️ THIS FILE IS NOT A BACK DOOR FOR CSS. Everything in this interface is utility classes in the
+ * component that renders the markup; a rule belongs here only when it styles elements the component
+ * does NOT render, which in practice means one thing: the data table. A page writes its own `<tr>`
+ * and `<td>`, so the table's padding, its rules, its hover, its selected row and — above all — the
+ * card layout it falls back to in a narrow frame are descendant rules by necessity. Writing those as
+ * utilities would mean every one of several hundred cells in this product carrying fifteen
+ * `[[data-layout=stacked]_&]:…` variants, which is not maintainable and would not survive a month.
+ *
+ * ⚠️ These classes are UNLAYERED, so they outrank every Tailwind utility. That is the same cascade
+ * the CSS Modules they replace had, so nothing that worked before stops working — but it does mean a
+ * page cannot repaint a cell by adding `p-2` to it. Reach for a prop on the component instead.
+ *
+ * The `rc-` prefix says "this is a component class, not a utility", so the two are never confused at
+ * a call site.
+ */
+
+/*
+ * A row whose name is a link: the link covers the row, so the whole row opens the item, and anything
+ * else in the row stays clickable above it. Both of those are rules about the `<tr>` and about every
+ * other control inside it — elements the page writes — so they cannot live on the link itself.
+ */
+.rc-row-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+tr:has(> td > .rc-row-link),
+tr:has(> td > div > .rc-row-link) {
+  position: relative;
+  cursor: pointer;
+}
+
+tr:has(.rc-row-link) :is(a, button):not(.rc-row-link) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Positioned, so an absolutely placed child — a screen-reader-only header label — stays inside the
+   scrolling frame instead of being measured against the page and widening it. */
+.rc-table-scroll {
+  position: relative;
+  overflow: auto;
+  min-width: 0;
+}
+
+/* The frame carries the shades, so they stay put while the table scrolls under them. */
+.rc-table-frame {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rc-table-frame::before,
+.rc-table-frame::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 28px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.rc-table-frame::before {
+  left: 0;
+  background: linear-gradient(to right, color-mix(in srgb, var(--ink) 16%, transparent), transparent);
+}
+
+.rc-table-frame::after {
+  right: 0;
+  background: linear-gradient(to left, color-mix(in srgb, var(--ink) 16%, transparent), transparent);
+}
+
+.rc-table-frame[data-hidden-before="true"]::before,
+.rc-table-frame[data-hidden-after="true"]::after {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-table-frame::before,
+  .rc-table-frame::after {
+    transition: none;
+  }
+}
+
+.rc-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  white-space: nowrap;
+  background: var(--surface);
+}
+
+.rc-table th {
+  font-size: var(--text-2xs);
+  color: var(--muted);
+  font-weight: 500;
+  background: var(--well);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rc-table th,
+.rc-table td {
+  padding: calc(12px * var(--ui-scale)) calc(16px * var(--ui-scale));
+  border-bottom: 1px solid var(--line);
+}
+
+/* Cells stay on one line so columns scan; a cell holding prose opts into wrapping explicitly. */
+.rc-table td.wraps {
+  white-space: normal;
+  min-width: 24ch;
+  max-width: 64ch;
+}
+
+/* The row's actions: one line, pressed to the right edge, and only as wide as its buttons, so every
+   table ends its rows the same way. Buttons sit on the cell's middle line, so an icon-only button and
+   a labelled one share a baseline. Put an icon-only button before a labelled one: the labels then end
+   on the same edge whichever icons a row happens to have. */
+.rc-table td.actions {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+  padding-top: calc(6px * var(--ui-scale));
+  padding-bottom: calc(6px * var(--ui-scale));
+}
+
+.rc-table td.actions > * {
+  vertical-align: middle;
+}
+
+.rc-table td.actions > * + * {
+  margin-left: var(--space-1);
+}
+
+.rc-table th.numeric,
+.rc-table td.numeric {
+  text-align: right;
+}
+
+/* A numeric column's header is a label like any other: right-aligned with its figures, but in the
+   sans face — the monospace face spreads "LEFT OUT" into "LEFT  OUT". */
+.rc-table th.numeric {
+  font-family: inherit;
+}
+
+.rc-table tbody tr:hover td {
+  background: var(--well);
+}
+
+/*
+ * A selected row (the one shown in an inspector) keeps its tint while hovered.
+ *
+ * ⚠️ The tint is neutral on purpose. It was `--accent-soft` — the very fill the `active` badge uses —
+ * so every badge in a selected row dissolved into the row and only its 2px stripe survived; a row of
+ * extension tokens became a row of blue on blue. The selection is already said by the accent stripe on
+ * the first cell, which is now 3px, so the accent is spent on the marker rather than on the whole row.
+ */
+.rc-table tbody tr[data-selected="true"] td,
+.rc-table tbody tr[data-selected="true"]:hover td {
+  background: var(--well);
+}
+
+.rc-table tbody tr[data-selected="true"] td:first-child {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/*
+ * ── Stacked ──────────────────────────────────────────────────────────────────────────────────────
+ *
+ * One card per row, for a frame too narrow to hold columns. The element stays a real table — only
+ * what is painted changes — so `th[scope=col]` keeps associating every value with its column for a
+ * screen reader while the eye reads the label drawn beside it.
+ */
+
+.rc-table-frame[data-layout="stacked"] .rc-table-scroll {
+  overflow: visible;
+}
+
+/* Nothing is hidden sideways any more, so the edge shades would be a lie. */
+.rc-table-frame[data-layout="stacked"]::before,
+.rc-table-frame[data-layout="stacked"]::after {
+  content: none;
+}
+
+.rc-table-frame[data-layout="stacked"] .rc-table,
+.rc-table-frame[data-layout="stacked"] .rc-table tbody,
+.rc-table-frame[data-layout="stacked"] .rc-table tr,
+.rc-table-frame[data-layout="stacked"] .rc-table td {
+  display: block;
+}
+
+/* A page may hold its columns apart with a minimum width — there are no columns here to hold apart,
+   and the minimum is the whole sideways scroll the stacking exists to remove. */
+.rc-table-frame[data-layout="stacked"] .rc-table {
+  min-width: 0;
+  table-layout: auto;
+}
+
+/* Read, not seen: the header's text is drawn on the cells themselves. It has to leave the table's
+   layout as well as the page — a `thead` that is only clipped still has header cells whose widths
+   set the table's, which is how a stacked table kept a sideways scroll it no longer needed. */
+.rc-table-frame[data-layout="stacked"] .rc-table thead {
+  display: block;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.rc-table-frame[data-layout="stacked"] .rc-table tbody tr {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+/*
+ * Label then value, on one line. A row of flex rather than a grid of two tracks on purpose: a cell
+ * holds whatever its page put there — one span, or a control and a note beside it — and extra children
+ * in a two-track grid land in a third, implicit track that widens the whole table. Here they simply
+ * share the line and wrap.
+ */
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  align-items: baseline;
+  /* A page sizes its columns for the table layout — `width: 100%; max-width: 0` is how a column is
+     made to take the leftover width and ellipsise. Out of a table that pair is a cell no pixels
+     wide, whose text wraps one letter to a line; every such measurement is dropped here. */
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  white-space: normal;
+  text-align: left;
+}
+
+/*
+ * Nothing in a cell may push the card wider than the screen. What is one short word beside a column
+ * — a badge saying which model is in force — can be a whole sentence once it is read on a phone, so
+ * it wraps. A path keeps its single line, because cutting its front is how it stays recognisable.
+ */
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td * {
+  white-space: normal;
+}
+
+/* Except what is deliberately one line and cut rather than wrapped — a path, an address. */
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td .keep-end,
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td .keep-end *,
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td .whitespace-nowrap,
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td .whitespace-nowrap * {
+  white-space: nowrap;
+}
+
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td + td {
+  margin-top: var(--space-2);
+}
+
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td::before {
+  content: attr(data-column);
+  flex: none;
+  width: 8em;
+  font-size: var(--text-2xs);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 550;
+}
+
+/*
+ * The first cell names the row, so it is the card's heading and takes no label. A cell with no column
+ * of its own — the actions cell, whose header is empty, and a message spanning the whole row — takes
+ * the full width for the same reason.
+ */
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td:first-child,
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td[data-column=""] {
+  display: block;
+}
+
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td:first-child::before,
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td[data-column=""]::before {
+  content: none;
+}
+
+/* A wrapping cell already wraps here; its column minimum would only force a sideways scroll back. */
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td.wraps {
+  min-width: 0;
+  max-width: none;
+}
+
+/* The row's actions sit under its values, on the left where the card's text starts. */
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td.actions {
+  margin-top: var(--space-3);
+  text-align: left;
+}
+
+/* Right-aligning a figure against nothing reads as a stray indent once the columns are gone. */
+.rc-table-frame[data-layout="stacked"] .rc-table tbody td.numeric {
+  text-align: left;
+}
+
+/* The card is the hovered thing, not a cell of it. */
+.rc-table-frame[data-layout="stacked"] .rc-table tbody tr:hover td,
+.rc-table-frame[data-layout="stacked"] .rc-table tbody tr[data-selected="true"] td {
+  background: transparent;
+}
+
+.rc-table-frame[data-layout="stacked"] .rc-table tbody tr:hover {
+  background: var(--well);
+}
+
+.rc-table-frame[data-layout="stacked"] .rc-table tbody tr[data-selected="true"],
+.rc-table-frame[data-layout="stacked"] .rc-table tbody tr[data-selected="true"]:hover {
+  background: var(--well);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.rc-table-frame[data-layout="stacked"] .rc-table tbody tr[data-selected="true"] td:first-child {
+  box-shadow: none;
+}
+
+/*
+ * ── The reading column ───────────────────────────────────────────────────────────────────────────
+ *
+ * ⚠️ COMPONENT CSS BY NECESSITY, not by preference. These rules style the output of the Markdown
+ * renderer: the headings, lists, tables and code blocks it emits from a captured document. This
+ * product writes none of that markup, so there is no element here to put a utility on.
+ *
+ * ⚠️ IT ALSO BRIDGES THE RENDERER'S OWN TOKENS. `@jmouse/markdown` paints itself from `--markdown-*`;
+ * pointing those at this interface's tokens once, here, is what makes a document follow the theme and
+ * the palette. A value copied in as a hex colour is a document that stays light in the dark theme.
+ */
+.rc-prose {
+  --markdown-paper: var(--surface);
+  --markdown-paper-2: var(--well);
+  --markdown-line: var(--line);
+  --markdown-ink: var(--ink);
+  --markdown-ink-2: var(--secondary);
+  --markdown-ink-3: var(--muted);
+  --markdown-ink-4: var(--muted);
+  --markdown-accent: var(--accent-text);
+  --markdown-accent-soft: var(--accent-soft);
+  --markdown-teal: var(--accent-text);
+  --markdown-danger: var(--danger);
+  --markdown-warn: var(--warn);
+  --markdown-ok: var(--good);
+  --markdown-r: var(--radius-control);
+  --markdown-r-md: var(--radius-control);
+  --markdown-font-mono: "JetBrains Mono", monospace;
+  --markdown-font-sans: var(--font-ui);
+  /* A reader that sets its own measure says so through the property: this sheet is unlayered, so no utility outranks it. */
+  max-width: var(--prose-measure, 84ch);
+  min-width: 0;
+  color: var(--ink);
+  font-size: var(--text-base);
+  line-height: 1.65;
+  /* ⚠️ Not `anywhere`: that lowers every word's minimum width, and a table then squeezes a column to one letter. */
+  overflow-wrap: break-word;
+}
+
+.rc-prose > div > :first-child,
+.rc-prose > :first-child {
+  margin-top: 0;
+}
+
+.rc-prose h1,
+.rc-prose h2,
+.rc-prose h3,
+.rc-prose h4,
+.rc-prose h5,
+.rc-prose h6 {
+  margin: var(--space-5) 0 var(--space-2);
+  font-family: var(--font-heading);
+  line-height: 1.3;
+}
+
+.rc-prose h1 {
+  font-size: var(--text-xl);
+}
+
+.rc-prose h2 {
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--text-lg);
+}
+
+.rc-prose h3 {
+  font-size: var(--text-md);
+}
+
+.rc-prose h4,
+.rc-prose h5,
+.rc-prose h6 {
+  font-size: var(--text-base);
+}
+
+.rc-prose p,
+.rc-prose ul,
+.rc-prose ol,
+.rc-prose blockquote,
+.rc-prose pre,
+.rc-prose table {
+  margin: 0 0 var(--space-3);
+}
+
+.rc-prose ul,
+.rc-prose ol {
+  padding-left: var(--space-5);
+}
+
+.rc-prose li + li {
+  margin-top: var(--space-1);
+}
+
+.rc-prose a {
+  color: var(--accent-text);
+  text-underline-offset: 2px;
+}
+
+.rc-prose a:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+
+.rc-prose blockquote {
+  padding: var(--space-1) var(--space-4);
+  border-left: 3px solid var(--line-strong);
+  color: var(--secondary);
+}
+
+.rc-prose hr {
+  margin: var(--space-5) 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.rc-prose code {
+  padding: 0 0.3em;
+  border-radius: var(--radius-control);
+  background: var(--well);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.88em;
+}
+
+.rc-prose pre {
+  padding: var(--space-3) var(--space-4);
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  background: var(--well);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+.rc-prose pre code {
+  padding: 0;
+  background: none;
+  font-size: inherit;
+}
+
+.rc-prose table {
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.rc-prose th,
+.rc-prose td {
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.rc-prose th {
+  background: var(--well);
+}
+
+.rc-prose input[type="checkbox"] {
+  margin-right: var(--space-1);
+}
+
+/*
+ * ── The code surface's chrome ────────────────────────────────────────────────────────────────────
+ *
+ * ⚠️ ALSO COMPONENT CSS BY NECESSITY: every selector here names a class CodeMirror puts on its own
+ * elements. ⚠️ And the SYNTAX colours are deliberately absent — those are the library's palette, set
+ * by `@jmouse/codemirror/styles.css`; painting code from this interface's tokens is the defect that
+ * stylesheet exists to prevent.
+ */
+.rc-code-surface {
+  height: 100%;
+}
+
+.rc-code-surface .cm-editor {
+  height: 100%;
+}
+
+.rc-code-surface .cm-scroller {
+  overflow: auto;
+}
+
+.rc-code-surface .cm-gutters {
+  user-select: none;
+}
+
+.rc-code-surface .cm-lineNumbers .cm-gutterElement {
+  padding: 0 var(--space-2) 0 var(--space-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The line a citation points at: the accent stripe a selected table row wears, on one line of code. */
+.rc-code-surface .reader-focus-line {
+  background: var(--accent-soft);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.rc-code-surface .cm-editor.cm-focused {
+  outline: 2px solid var(--accent-text);
+  outline-offset: -2px;
+}

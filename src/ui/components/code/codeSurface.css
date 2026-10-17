@@ -1,0 +1,33 @@
+/* The code surface: the library's syntax palette, and the names its editor chrome reads.
+
+   ⚠️ THE SYNTAX COLOURS ARE NOT RACCOON'S. `@jmouse/codemirror/styles.css` declares the `--syntax-*`
+   palette once for light and once for dark; Raccoon flags dark as `data-theme="dark"` on <html>, which
+   is one of the three selectors that stylesheet names. Painting code from the interface's own tokens is
+   the defect that stylesheet exists to prevent.
+
+   ⚠️ THE CHROME READS SHADCN'S NAMES. `editorChrome()` paints the background, caret, selection, gutter
+   and tooltips from `--foreground`, `--primary`, `--border`, `--muted-foreground`, `--popover` and
+   `--destructive`. Raccoon's tokens already flip with the theme, so pointing at them once here is what
+   makes the editor follow it. Declared on :root because this file loads only with the code surface. */
+
+@import "@jmouse/codemirror/styles.css";
+
+:root {
+  --foreground: var(--ink);
+  --muted-foreground: var(--muted);
+  --border: var(--line);
+  --primary: var(--accent-text);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --destructive: var(--danger);
+  --radius-md: var(--radius-control);
+  --font-mono: "JetBrains Mono", monospace;
+  /* One size for every editor and every highlighted block, from the interface's own scale. */
+  --editor-font-size: var(--text-xs);
+}
+
+/* A static block and an editor share one face and one size, so the two never come apart. */
+.code-surface {
+  font-family: var(--font-mono);
+  font-size: var(--editor-font-size);
+}

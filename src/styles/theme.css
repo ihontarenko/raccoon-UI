@@ -1,0 +1,402 @@
+/*
+ * The Raccoon interface wears its own instrument design through Tailwind.
+ *
+ * ⚠️ READ THIS BEFORE ADDING A STYLESHEET. This interface has no CSS Modules. Every component
+ * expresses its structure as utility classes in its own markup, and this file is the only place that
+ * declares what those utilities mean. Eighty-three `*.module.css` files and 13 470 lines of hand
+ * written CSS stood here until 2026-10-07; they were replaced rather than wrapped, so a new
+ * `*.module.css` is a regression rather than a local decision.
+ *
+ * The layering is deliberate and is three files, not one:
+ *
+ *   fonts.css    the faces this application serves itself
+ *   tokens.css   the values — and ONLY the values: the four appearance axes and nothing else
+ *   theme.css    this file: what Tailwind may name, the base element styles, the shared utilities
+ *
+ * ⚠️ THE TOKENS ARE THE SOURCE OF TRUTH AND ARE NOT RESTATED HERE AS COLOURS. `@theme inline` maps a
+ * Tailwind colour name onto the token it reads, so `bg-surface` compiles to `var(--surface)` and
+ * follows `data-theme`, `data-palette` and `data-intensity` by itself. Copying a hex value into this
+ * file is how an appearance axis stops reaching one screen.
+ */
+
+@import "tailwindcss";
+@import "./fonts.css";
+@import "./tokens.css";
+@import "./components.css";
+
+/*
+ * ⚠️ DARK IS AN ATTRIBUTE HERE, NOT A CLASS. Tailwind's own `dark:` variant looks for
+ * `prefers-color-scheme` or a `.dark` class; this interface flags the theme as `data-theme="dark"`
+ * on <html>, because the theme is one of four axes that all read the same way. Without this
+ * declaration every `dark:` utility in the product resolves to nothing — silently.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  /*
+   * ⚠️ THE SPACING STEP IS THE SIZE AXIS. Tailwind's whole spacing scale — `p-3`, `gap-2`, `size-8`
+   * — is `calc(var(--spacing) * n)`, so making this one value follow `--ui-scale` is what makes the
+   * interface scale rather than only its text. 4px is the design's `--space-1`, and the rest of that
+   * ladder is reached as multiples: `--space-5` (24px) is `6`, `--space-6` (32px) is `8`,
+   * `--space-7` (48px) is `12`.
+   */
+  --spacing: calc(4px * var(--ui-scale));
+
+  /*
+   * The type ladder, the same seven steps the design prototype names. The values repeat
+   * `tokens.css` because Tailwind must know them at build time to emit `text-sm`; the formula is
+   * identical, so the two cannot disagree without somebody editing one of them on purpose.
+   *
+   * Line heights are unitless: they follow the size, so a step scales as one thing.
+   */
+  --text-2xs: calc(11px * var(--ui-scale));
+  --text-2xs--line-height: 1.45;
+  --text-xs: calc(12px * var(--ui-scale));
+  --text-xs--line-height: 1.5;
+  --text-sm: calc(13px * var(--ui-scale));
+  --text-sm--line-height: 1.5;
+  --text-base: calc(14px * var(--ui-scale));
+  --text-base--line-height: 1.5;
+  --text-md: calc(16px * var(--ui-scale));
+  --text-md--line-height: 1.45;
+  --text-lg: calc(19px * var(--ui-scale));
+  --text-lg--line-height: 1.25;
+  --text-xl: calc(23px * var(--ui-scale));
+  --text-xl--line-height: 1.25;
+
+  /*
+   * Three radii, each naming what it is for rather than how big it is: a control, a surface, a
+   * dialog. ⚠️ `rounded-md` is NOT one of them and must not be used — the code surface redeclares
+   * `--radius-md` on :root for the shadcn bridge the editor chrome reads, so that one name means
+   * something else in this product.
+   */
+  --radius-control: calc(6px * var(--ui-scale));
+  --radius-surface: calc(8px * var(--ui-scale));
+  --radius-dialog: calc(12px * var(--ui-scale));
+
+  /*
+   * ⚠️ THE NAMED MEASUREMENTS OF THE FRAME ARE NOT THEME KEYS, ON PURPOSE. `--control`,
+   * `--control-option`, `--touch-target`, `--rail` and `--inspector` stay in `tokens.css` and are
+   * asked for through Tailwind's variable shorthand — `min-h-(--control)`, `w-(--rail)`,
+   * `size-(--touch-target)`. Naming them in `@theme` instead would spread one measurement across
+   * four namespaces (`--size-*`, `--width-*`, `--height-*`, `--min-height-*`) and the utility that
+   * was not declared would simply not exist, which is the failure that leaves a control unsized and
+   * says nothing. The shorthand works for every property.
+   */
+
+  /* The faces this product draws in. `--font-sans` is the font axis itself; the mono face is fixed,
+     because a technical value is mono whatever the axis says. */
+  --font-sans: var(--font-ui);
+  --font-mono: "JetBrains Mono", monospace;
+  --default-font-family: var(--font-ui);
+  --default-mono-font-family: "JetBrains Mono", monospace;
+
+  /*
+   * Depth is a rule and one step of surface luminance. These are the only two places the design
+   * lifts something off the page instead, and both are a thing that arrived over the page rather
+   * than a thing that is part of it: a dialog over its scrim, a toast over the corner.
+   *
+   * ⚠️ Every OTHER shadow in this interface is an inset edge mark — `inset 3px 0 0 var(--accent)`
+   * and its kin — which is a status stripe rather than depth, and is written at its call site as
+   * `shadow-[inset_3px_0_0_var(--accent)]`. Naming those here would turn one idiom into forty
+   * tokens.
+   */
+  --shadow-dialog: 0 20px 70px #0003;
+  --shadow-toast: 0 10px 30px #0003;
+
+  /*
+   * The waiting placeholder's breath. ⚠️ Not Tailwind's own `animate-pulse`: that one is a two
+   * second ease-in-out down to 0.5, and this is 1.4 seconds down to 0.45 — slow enough to read as
+   * waiting rather than as blinking, which is a judgement the design already made.
+   */
+  --animate-waiting: waiting 1.4s ease-in-out infinite;
+
+  @keyframes waiting {
+    50% {
+      opacity: 0.45;
+    }
+  }
+
+  /*
+   * The closeness wave pair drifting. ⚠️ 28px IS ONE WHOLE PERIOD of the wave drawn in
+   * `PhaseWave`, which is the only reason the drift is seamless and the offset between the two waves
+   * — the cosine similarity the whole picture is about — never changes. Changing one without the
+   * other turns a measurement into a decoration.
+   */
+  --animate-drift: drift 2.4s linear infinite;
+
+  @keyframes drift {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-28px);
+    }
+  }
+
+  /*
+   * The step a document is at, breathing. ⚠️ It animates the BACKGROUND rather than the opacity, so
+   * the words in the step never fade — the step is where the work is, and a label that dims while
+   * you read it is a label you read twice.
+   */
+  --animate-step-pulse: step-pulse 1600ms ease-in-out infinite;
+
+  @keyframes step-pulse {
+    50% {
+      background: var(--surface);
+    }
+  }
+
+  /* A toast arriving: six pixels up and into view, once, in the time a hover takes. */
+  --animate-arrive: arrive 120ms ease-out;
+
+  @keyframes arrive {
+    from {
+      transform: translateY(6px);
+      opacity: 0;
+    }
+  }
+}
+
+/*
+ * ⚠️ `inline` MATTERS HERE. Without it Tailwind would copy these values into its own `--color-*`
+ * variables on :root, and a token redefined under `[data-theme="dark"]` would no longer reach the
+ * utility — the interface would keep one theme forever. With it, `bg-surface` emits
+ * `background-color: var(--surface)` and the axes work.
+ *
+ * It is also what lets a name here be the name of the token it reads: `font-heading` resolves to
+ * `var(--font-heading)` at use, which a non-inline declaration could not do without defining itself
+ * in terms of itself.
+ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-side: var(--side);
+  --color-well: var(--well);
+
+  --color-ink: var(--ink);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-on-ink: var(--on-ink);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
+
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  /* A verdict, not a decoration: blue lets through, red refuses, and neither follows the palette. */
+  --color-allow: var(--allow);
+  --color-allow-soft: var(--allow-soft);
+  --color-place-door: var(--place-door);
+  --color-place-door-soft: var(--place-door-soft);
+  --color-place-pipeline: var(--place-pipeline);
+  --color-place-pipeline-soft: var(--place-pipeline-soft);
+  --color-deny: var(--deny);
+  --color-deny-soft: var(--deny-soft);
+
+  --color-scrim: var(--scrim);
+  --color-embedded-ground: var(--embedded-ground);
+
+  --font-heading: var(--font-heading);
+  --font-control: var(--font-control);
+}
+
+/*
+ * ⚠️ `@layer base`, NOT UNLAYERED. Tailwind's preflight is itself in this layer, and unlayered CSS
+ * outranks every layer — an element rule written outside a layer would beat the utility meant to
+ * override it, so an `h1` asking for `text-lg` would silently stay 23px. Inside the layer these
+ * rules sit after preflight and before every utility, which is exactly where a base style belongs.
+ */
+@layer base {
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: var(--text-sm) / 1.5 var(--font-ui);
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    margin: 0;
+  }
+
+  h1 {
+    font-size: var(--text-xl);
+    letter-spacing: -0.035em;
+    line-height: 1.25;
+    font-weight: 650;
+  }
+
+  h2 {
+    font-size: var(--text-md);
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: var(--text-base);
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  /*
+   * ⚠️ TAILWIND'S PREFLIGHT STRIPS EVERY LIST OF ITS MARKERS AND ITS INDENT, and this product is
+   * full of lists that are prose rather than layout: the lists inside a rebuilt document, the guided
+   * steps on the profiles screen, the refusals under a form, the bounds in an explanation. They are
+   * written as ordinary markup and have always shown the browser's own bullets and numbers, so both
+   * are put back here.
+   *
+   * A list used as layout says `list-none` and sets its own padding, and a utility outranks a base
+   * rule — so nothing that asked for a bare list gets a bullet back. `revert` rather than a literal
+   * value on purpose: it hands the decision to the browser, which is where it was before.
+   */
+  ul,
+  ol {
+    list-style: revert;
+    padding-inline-start: revert;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+    font-family: var(--font-control);
+  }
+
+  button,
+  a,
+  input,
+  select {
+    touch-action: manipulation;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: default;
+  }
+
+  a {
+    color: var(--accent-text);
+    text-underline-offset: 3px;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary {
+    transition:
+      background-color 120ms,
+      border-color 120ms,
+      color 120ms;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent-text);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: var(--accent-soft);
+  }
+
+  /*
+   * Text is shown exactly as written. JetBrains Mono draws "->" as an arrow, "==" as a double bar
+   * and "<>" as a diamond — which misquotes source code, the thing this product exists to cite.
+   * Ligatures are off everywhere.
+   * ⚠️ Set on every element, not inherited from the root: a `font` shorthand anywhere (body,
+   * CodeMirror) resets font-variant-ligatures to normal and breaks inheritance. Nothing else in the
+   * product sets these two properties.
+   */
+  *,
+  *::before,
+  *::after {
+    font-variant-ligatures: none !important;
+    font-feature-settings: "liga" 0, "calt" 0 !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/*
+ * The shared utilities — the handful of looks that are a vocabulary rather than a component. They
+ * are `@utility` rather than plain classes so Tailwind orders them with every other utility, and a
+ * later `text-ink` can still override the colour one of them sets.
+ */
+
+/* A technical value: one face, and figures that line up down a column. */
+@utility numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The label that marks metadata rather than naming it. An identifier inside one keeps its own case,
+   because "63A84212" in a heading and "63a84212" in a list read as two different ids. */
+@utility eyebrow {
+  font-size: var(--text-2xs);
+  line-height: 1.45;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 550;
+
+  & .numeric,
+  & code {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+}
+
+/*
+ * The disclosure chevron a native <select> wears on its right.
+ *
+ * ⚠️ IT IS A UTILITY RATHER THAN AN ARBITRARY VALUE because the mark is a data URI: an inline SVG
+ * carrying quotes, spaces and a `#` colour, none of which survive being written inside
+ * `bg-[url(…)]` without escaping that is unreadable and breaks on the next edit. The colour is the
+ * one literal in this file and is deliberate — the chevron is drawn in the stroke the design gives a
+ * disclosure in both themes, and a token cannot be read from inside a URI.
+ */
+@utility field-chevron {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2363717e' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right calc(8px * var(--ui-scale)) center;
+  background-size: calc(16px * var(--ui-scale));
+}
+
+/* One line, cut from the START: the ellipsis takes the front of a path and the end stays readable.
+   The text sits in a <bdi>, so the right-to-left box moves only the ellipsis, never the characters. */
+@utility keep-end {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  direction: rtl;
+  text-align: left;
+}
