@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { JobTrack } from "../../pages/jobs/JobTrack";
 import { GraphEvidenceTable } from "../../pages/indexing/GraphEvidenceTable";
+import { ProcessingOperations } from "../../pages/documents/pipeline/ProcessingOperations";
 import { PreparationPreview } from "../../pages/documents/pipeline/PreparationPreview";
 import type { WorkspaceJob } from "../../lib/workspaceJobs";
 import { AppearanceControls } from "../../appearance/AppearanceControls";
@@ -296,6 +297,22 @@ export function UiKit() {
         <AppearanceControls state={appearance} onChange={changeAppearance} />
       </KitSection>
 
+      <KitSection
+        name="processing-operations"
+        title={t("uiKit.processing.title", "Document operations")}
+        description={t(
+          "uiKit.processing.description",
+          "A document capability shows what it produces, whether it is prepared, and whether it is included in the next run.",
+        )}
+      >
+        <ProcessingOperations
+          steps={["parse", "chunk", "relations"]}
+          runs={[]}
+          disabled={true}
+          onToggle={() => {}}
+          onOnly={() => {}}
+        />
+      </KitSection>
       <KitSection
         name="preparation-preview"
         title={t("uiKit.preparation.title", "Preparation preview")}

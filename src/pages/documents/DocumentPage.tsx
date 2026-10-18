@@ -41,13 +41,19 @@ import { VersionsTab } from "./tabs/VersionsTab";
 import { CRUMB, EXTERNAL_IDENTIFIER, REMOVAL_NOTICE } from "./documentPageClasses";
 import { useAddressChange } from "../../application/useAddressChange";
 
+const PROCESSING_TABS = new Set<DocumentTab>(["manage", "relations", "trace", "journal"]);
+
+export function DocumentProcessingPage() {
+  return <DocumentPage processingPage />;
+}
+
 const TERMINAL = new Set(["SUCCEEDED", "FAILED", "CANCELLED"]);
 
 /**
  * One document, its preparation runs and their independent outputs: parse, chunks, lexical entries,
  * selected relations and published graphs. Preparation does not require publication in search.
  */
-export function DocumentPage() {
+export function DocumentPage({ processingPage = false }: { processingPage?: boolean } = {}) {
   const { workspace } = useReadySession();
   const workspaceId = workspace?.id ?? "";
   const { documentId } = useParams({ strict: false }) as { documentId: string };
@@ -287,20 +293,47 @@ export function DocumentPage() {
             generations.find((item) => item.jobId === chunkRun.job.id)?.state ??
             chunkRun.job.status,
         };
-  const tab: DocumentTab = search.tab ?? "read";
+  const processingView =
+    processingPage || (search.tab !== undefined && PROCESSING_TABS.has(search.tab));
+  const tab: DocumentTab = search.tab ?? (processingView ? "manage" : "read");
   const sourceName = source.status === "ready" && source.data !== null ? source.data.name : null;
   const removed = document.removedAt !== null;
   const mayWriteDocuments = permissions.may(PERMISSIONS.documentWrite);
+  const activeProcessing = processing?.job ?? pendingJob;
+
+  const cancelProcessing = async () => {
+    if (activeProcessing === null) {
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.cancelJob(activeProcessing.id);
+      setProcessing(null);
+      refresh();
+      refreshActivity();
+    } catch (error) {
+      const problem = describeProblem(error);
+      notify({
+        tone: "error",
+        title: problem.title,
+        description: problem.detail ?? problem.description,
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // Changing the version or the tab drops what the Read tab was looking at; reading keeps both.
   const go = (next: { version?: string; tab?: DocumentTab; reading?: ReadingAddress }) => {
     const nextTab = next.tab ?? tab;
     void changeAddress({
-      to: "/documents/$documentId",
+      to: PROCESSING_TABS.has(nextTab)
+        ? "/documents/$documentId/processing"
+        : "/documents/$documentId",
       params: { documentId },
       search: {
         version: next.version ?? (isLatest ? undefined : version.id),
-        tab: nextTab === "read" ? undefined : nextTab,
+        tab: nextTab === "read" || nextTab === "manage" ? undefined : nextTab,
         view: next.reading?.view,
         lines: next.reading?.lines,
         page: next.reading?.page,
@@ -385,7 +418,21 @@ export function DocumentPage() {
             <Link to="/documents" className={CRUMB}>
               {t("documents.title", "Documents")}
             </Link>
-            {sourceName !== null && (
+            {processingView && (
+              <>
+                {" "}
+                /{" "}
+                <Link
+                  to="/documents/$documentId"
+                  params={{ documentId }}
+                  search={{ version: version.id }}
+                  className={CRUMB}
+                >
+                  {document.title}
+                </Link>
+              </>
+            )}
+            {!processingView && sourceName !== null && (
               <>
                 {" / "}
                 <Link
@@ -399,7 +446,7 @@ export function DocumentPage() {
             )}
           </>
         }
-        title={document.title}
+        title={processingView ? t("processing.pageTitle", "Process document") : document.title}
         status={
           removed ? (
             <Badge tone="deny">{t("documents.removed", "Removed")}</Badge>
@@ -421,6 +468,18 @@ export function DocumentPage() {
         }
         actions={
           <>
+            <Button
+              variant="quiet"
+              href={
+                processingView
+                  ? "/documents/" + documentId + "?version=" + version.id
+                  : "/documents/" + documentId + "/processing?version=" + version.id
+              }
+            >
+              {processingView
+                ? t("processing.openDocument", "Open document")
+                : t("processing.openProcessing", "Process document")}
+            </Button>
             {versions.length > 1 && (
               <Select
                 aria-label={t("documents.versionLabel", "Version")}
@@ -447,7 +506,7 @@ export function DocumentPage() {
                 ))}
               </Select>
             )}
-            {mayWriteDocuments && !removed && (
+            {mayWriteDocuments && !removed && !processingView && (
               <RemoveDocumentButton
                 workspaceId={workspaceId}
                 document={document}
@@ -473,7 +532,7 @@ export function DocumentPage() {
         </div>
       )}
 
-      {mayReadAutomation && (
+      {mayReadAutomation && !processingView && (
         <PipelineStrip
           version={version}
           isLatest={isLatest}
@@ -512,31 +571,63 @@ export function DocumentPage() {
         />
       )}
 
+      {processingView && activeProcessing !== null && (
+        <section
+          className="my-4 flex flex-wrap items-center gap-3 border-y border-line py-3"
+          aria-label={t("processing.activeRun", "Current preparation run")}
+        >
+          <Badge tone="active">{labelOfCode(JOB_STATUSES, activeProcessing.status)}</Badge>
+          <p role="status" className="mr-auto text-sm text-secondary">
+            {activity?.workerAlive === false
+              ? t(
+                  "processing.waitingWorker",
+                  "Queued. Processing will start when the worker is running.",
+                )
+              : t(
+                  "processing.followingRun",
+                  "The selected operations are in progress. Results refresh here when the run finishes.",
+                )}
+          </p>
+          {permissions.may(PERMISSIONS.jobRead) && (
+            <Button variant="quiet" href={"/jobs/" + activeProcessing.id}>
+              {t("processing.openRun", "Run details")}
+            </Button>
+          )}
+          {permissions.may(PERMISSIONS.jobWrite) && (
+            <Button variant="quiet" disabled={busy} onClick={() => void cancelProcessing()}>
+              {t("processing.cancelRun", "Cancel run")}
+            </Button>
+          )}
+        </section>
+      )}
+
       <Tabs<DocumentTab>
         label={t("documents.column.document", "Document")}
         active={tab}
         onSelect={(next) => {
           go({ tab: next });
         }}
-        items={[
-          { key: "manage", label: t("preparation.manage", "Manage") },
-          { key: "relations", label: t("preparation.relations", "Relations") },
-          { key: "read", label: t("documents.tab.read", "Read") },
-          { key: "text", label: t("documents.tab.text", "Parsed text") },
-          {
-            key: "chunks",
-            label: t("documents.tab.chunks", "Chunks"),
-            count: generation?.entryCount,
-          },
-          { key: "trace", label: t("documents.tab.trace", "Trace") },
-          {
-            key: "versions",
-            label: t("documents.column.versions", "Versions"),
-            count: versions.length,
-          },
-          { key: "origin", label: t("documents.tab.origin", "Origin") },
-          { key: "journal", label: t("documents.tab.journal", "Journal") },
-        ]}
+        items={(
+          [
+            { key: "manage", label: t("preparation.manage", "Manage") },
+            { key: "relations", label: t("preparation.relations", "Relations") },
+            { key: "read", label: t("documents.tab.read", "Read") },
+            { key: "text", label: t("documents.tab.text", "Parsed text") },
+            {
+              key: "chunks",
+              label: t("documents.tab.chunks", "Chunks"),
+              count: generation?.entryCount,
+            },
+            { key: "trace", label: t("documents.tab.trace", "Trace") },
+            {
+              key: "versions",
+              label: t("documents.column.versions", "Versions"),
+              count: versions.length,
+            },
+            { key: "origin", label: t("documents.tab.origin", "Origin") },
+            { key: "journal", label: t("documents.tab.journal", "Journal") },
+          ] as { key: DocumentTab; label: string; count?: number }[]
+        ).filter((item) => processingView === PROCESSING_TABS.has(item.key))}
       />
       <TabPanel tabKey={tab}>
         {tab === "manage" &&
@@ -549,6 +640,8 @@ export function DocumentPage() {
               workspaceId={workspaceId}
               documentId={document.id}
               versionId={version.id}
+              documentTitle={version.title}
+              mediaType={version.mediaType}
               profiles={processingProfiles}
               runs={runs}
               submitting={submitting || pendingJob !== null}

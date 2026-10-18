@@ -119,7 +119,9 @@ function librarySearchOf(search: Record<string, unknown>): LibrarySearch {
     file: typeof search.file === "string" ? search.file : undefined,
     pick: typeof search.pick === "string" ? search.pick : undefined,
     order: search.order === "SIZE" || search.order === "CAPTURED" ? search.order : undefined,
-    kind: ["markdown", "text", "code", "pdf", "book", "image", "audio", "video", "none"].find((kind) => kind === search.kind) as LibrarySearch["kind"],
+    kind: ["markdown", "text", "code", "pdf", "book", "image", "audio", "video", "none"].find(
+      (kind) => kind === search.kind,
+    ) as LibrarySearch["kind"],
     open: typeof search.open === "string" && search.open.length > 0 ? search.open : undefined,
     active: typeof search.active === "string" ? search.active : undefined,
     read: search.read === true || search.read === "true" ? true : undefined,
@@ -167,6 +169,19 @@ const documentRoute = createRoute({
   component: lazyRouteComponent(() => import("../pages/documents/DocumentPage"), "DocumentPage"),
 });
 
+const documentProcessingRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/documents/$documentId/processing",
+  validateSearch: (search: Record<string, unknown>): DocumentSearch => ({
+    version: typeof search.version === "string" ? search.version : undefined,
+    tab: documentTabOf(search.tab),
+  }),
+  component: lazyRouteComponent(
+    () => import("../pages/documents/DocumentPage"),
+    "DocumentProcessingPage",
+  ),
+});
+
 const parsersRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/parsers",
@@ -212,7 +227,9 @@ const ruleSetsRoute = createRoute({
 const ruleSetRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/rules/$ruleSetId",
-  validateSearch: (search: Record<string, unknown>): { tab?: RuleSetTab; addStage?: RuleStage } => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { tab?: RuleSetTab; addStage?: RuleStage } => ({
     tab: tabOf(RULE_SET_TABS, search.tab),
     addStage: RULE_STAGES.find((stage) => stage === search.addStage),
   }),
@@ -365,6 +382,7 @@ const routeTree = rootRoute.addChildren([
     filesRoute,
     documentsRoute,
     documentRoute,
+    documentProcessingRoute,
     indexRoute,
     workspaceJobsRoute,
     parsersRoute,

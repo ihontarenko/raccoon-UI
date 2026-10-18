@@ -45,6 +45,8 @@ export interface PreparationConfiguration {
 }
 
 export interface ProcessingProfileConfiguration {
+  automaticParserIds?: string[];
+  parserOptions?: Record<string, Record<string, unknown>>;
   parserId: string;
   maximumCharacters: number;
   maximumBlocks: number;
