@@ -666,6 +666,47 @@ function ActionEditor({
             ))}
         </Select>
       </div>
+      {(action.type === "DEFINE_ENTITY" || action.type === "LINK_ENTITY") && (
+        <>
+          <TextField
+            label={t("rules.semantic.namespace", "Namespace")}
+            value={action.namespace}
+            onChange={(namespace) => onChange({ ...action, namespace })}
+          />
+          <TextField
+            label={t("rules.semantic.key", "Entity key")}
+            value={action.key}
+            onChange={(key) => onChange({ ...action, key })}
+          />
+          {action.type === "DEFINE_ENTITY" && (
+            <>
+              <TextField
+                label={t("rules.semantic.name", "Entity name")}
+                value={action.name}
+                onChange={(name) => onChange({ ...action, name })}
+              />
+              <TextField
+                label={t("rules.semantic.kind", "Entity kind")}
+                value={action.kind}
+                onChange={(kind) => onChange({ ...action, kind })}
+              />
+            </>
+          )}
+          {action.type === "LINK_ENTITY" && (
+            <TextField
+              label={t("rules.semantic.role", "Relation role")}
+              value={action.role}
+              onChange={(role) => onChange({ ...action, role })}
+            />
+          )}
+          <p className={HINT}>
+            {t(
+              "rules.semantic.provenance",
+              "Matched facts retain this block as evidence and the rule set revision as provenance.",
+            )}
+          </p>
+        </>
+      )}
       {action.type === "NORMALISE" && (
         <div className={FIELD}>
           <span className={LABEL}>{t("profiles.content.operations", "Rewrites")}</span>
@@ -848,12 +889,12 @@ function NumberField({
 
 function TextField({
   label,
-  hint,
+  hint = "",
   value,
   onChange,
 }: {
   label: string;
-  hint: string;
+  hint?: string;
   value: string;
   onChange: (value: string) => void;
 }) {

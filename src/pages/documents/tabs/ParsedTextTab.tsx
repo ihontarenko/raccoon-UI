@@ -4,7 +4,7 @@ import { useResource } from "../../../application/useResource";
 import {
   pipelineApi,
   type ContentOutcome,
-  type IndexGeneration,
+  type ProcessingReference,
   type StructuredBlock,
   type StructuredDocument,
 } from "../../../lib/pipeline";
@@ -170,7 +170,7 @@ export function ParsedTextTab({
 }: {
   workspaceId: string;
   documentId: string;
-  generation: IndexGeneration | null;
+  generation: ProcessingReference | null;
 }) {
   const { t, plural, locale } = useTranslation();
   const parsed = useResource<Parsed | null>(async () => {

@@ -34,6 +34,14 @@ export interface PreparationConfiguration {
   chunking: ChunkingConfiguration | null;
   indexing: LexicalIndexConfiguration | null;
   scriptGroupIds: string[];
+  ruleSetIds?: string[];
+  layersOff?: string[];
+  relations?: {
+    roles: string[];
+    origins: string[];
+    includeUnreliable: boolean;
+    includeReadingOnly: boolean;
+  } | null;
 }
 
 export interface ProcessingProfileConfiguration {
@@ -84,6 +92,52 @@ export interface ProcessingRun {
   preparation: PreparationConfiguration;
   effectivePreparation: PreparationConfiguration | null;
   maximumChunks: number;
+  parserOptions: Record<string, unknown>;
+  reusedParseJobId: string | null;
+}
+
+export interface ProcessingReference {
+  jobId: string;
+  versionId: string;
+  state: string;
+}
+
+export interface ProcessingRequest {
+  profileId: string;
+  profileRevision?: number;
+  reusedParseJobId?: string | null;
+  preparation?: PreparationConfiguration;
+}
+
+export interface PreviewSample<T> {
+  total: number;
+  items: T[];
+  truncated: boolean;
+}
+
+export interface DocumentRelations {
+  providers: {
+    id: string;
+    entities: PreviewSample<{ id: string; name: string; qualifiedName: string; kind: string }>;
+    relations: PreviewSample<{ id: string; writtenTarget: string; role: string; origin: string }>;
+  }[];
+  generationIds: string[];
+}
+
+export interface ProcessingPreview {
+  profileRevision: number;
+  parserId: string;
+  reusedParseJobId: string | null;
+  preparation: PreparationConfiguration;
+  characters: number;
+  blocks: number;
+  text: string;
+  textTruncated: boolean;
+  chunks: PreviewSample<Chunk>;
+  lexical: PreviewSample<{ chunkNumber: number; indexedText: string; searchVector: string }>;
+  graph: import("./graph").GraphPreview | null;
+  notices: string[];
+  persisted: false;
 }
 
 export type BlockKind =
@@ -642,12 +696,35 @@ export const pipelineApi = {
     versionId: string,
     profileId: string,
     key: string,
+    request?: ProcessingRequest,
   ) =>
     api.send<ProcessingRun>(
       "POST",
       `${documentPath(workspaceId, documentId, versionId)}/processing-runs`,
-      { profileId },
+      request ?? { profileId },
       idempotent(key),
+    ),
+  documentRelations: (workspaceId: string, documentId: string, versionId: string, jobId: string) =>
+    api.send<DocumentRelations>(
+      "GET",
+      `${documentPath(workspaceId, documentId, versionId)}/processing-runs/${jobId}/relations`,
+    ),
+  processingHistory: (workspaceId: string, documentId: string, versionId: string) =>
+    api.send<ProcessingRun[]>(
+      "GET",
+      `${documentPath(workspaceId, documentId, versionId)}/processing-runs`,
+    ),
+  processingPreview: (
+    workspaceId: string,
+    documentId: string,
+    versionId: string,
+    processing: ProcessingRequest,
+    context?: import("./graph").GraphRequest,
+  ) =>
+    api.send<ProcessingPreview>(
+      "POST",
+      `${documentPath(workspaceId, documentId, versionId)}/processing-runs/preview`,
+      { processing, context },
     ),
   processingRun: (workspaceId: string, documentId: string, versionId: string, jobId: string) =>
     api.send<ProcessingRun>(

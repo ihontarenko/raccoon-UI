@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { JobTrack } from "../../pages/jobs/JobTrack";
+import { GraphEvidenceTable } from "../../pages/indexing/GraphEvidenceTable";
+import { PreparationPreview } from "../../pages/documents/pipeline/PreparationPreview";
 import type { WorkspaceJob } from "../../lib/workspaceJobs";
 import { AppearanceControls } from "../../appearance/AppearanceControls";
 import { useAppearance } from "../../appearance/AppearanceProvider";
@@ -150,10 +152,26 @@ const SAMPLE_JOB: WorkspaceJob = {
 const JOB_TRACK_SAMPLES: { caption: string; job: WorkspaceJob; workerAlive: boolean }[] = [
   { caption: "Queued", job: SAMPLE_JOB, workerAlive: true },
   { caption: "Queued, no worker", job: SAMPLE_JOB, workerAlive: false },
-  { caption: "Taken", job: { ...SAMPLE_JOB, status: "RUNNING", workerId: "local-worker", attemptCount: 1 }, workerAlive: true },
-  { caption: "Working · chunking", job: { ...SAMPLE_JOB, status: "RUNNING", done: 1, total: 3, currentStep: "chunk" }, workerAlive: true },
-  { caption: "Done", job: { ...SAMPLE_JOB, status: "SUCCEEDED", done: 3, total: 3 }, workerAlive: true },
-  { caption: "Failed", job: { ...SAMPLE_JOB, status: "FAILED", failureCode: "DOCUMENT_PARSE_FAILED" }, workerAlive: true },
+  {
+    caption: "Taken",
+    job: { ...SAMPLE_JOB, status: "RUNNING", workerId: "local-worker", attemptCount: 1 },
+    workerAlive: true,
+  },
+  {
+    caption: "Working · chunking",
+    job: { ...SAMPLE_JOB, status: "RUNNING", done: 1, total: 3, currentStep: "chunk" },
+    workerAlive: true,
+  },
+  {
+    caption: "Done",
+    job: { ...SAMPLE_JOB, status: "SUCCEEDED", done: 3, total: 3 },
+    workerAlive: true,
+  },
+  {
+    caption: "Failed",
+    job: { ...SAMPLE_JOB, status: "FAILED", failureCode: "DOCUMENT_PARSE_FAILED" },
+    workerAlive: true,
+  },
   { caption: "Cancelled", job: { ...SAMPLE_JOB, status: "CANCELLED" }, workerAlive: true },
 ];
 
@@ -276,6 +294,161 @@ export function UiKit() {
         )}
       >
         <AppearanceControls state={appearance} onChange={changeAppearance} />
+      </KitSection>
+
+      <KitSection
+        name="preparation-preview"
+        title={t("uiKit.preparation.title", "Preparation preview")}
+        description={t(
+          "uiKit.preparation.description",
+          "Fresh outputs of the current settings, with explicit sample counts and no publication. The same component is used in document management.",
+        )}
+      >
+        <PreparationPreview
+          result={{
+            profileRevision: 1,
+            parserId: "markdown-utf8",
+            reusedParseJobId: null,
+            preparation: {
+              steps: ["parse", "chunk", "lexical"],
+              chunking: {
+                chunkerIds: ["section-window"],
+                maximumCodePoints: 1200,
+                overlapCodePoints: 120,
+              },
+              indexing: {
+                backendId: "postgresql-fts",
+                analyzer: "simple",
+                includeTitle: true,
+                publishAutomatically: false,
+              },
+              scriptGroupIds: [],
+            },
+            characters: 17,
+            blocks: 1,
+            text: "# Document\n\nText.",
+            textTruncated: false,
+            chunks: {
+              total: 1,
+              truncated: false,
+              items: [
+                {
+                  number: 0,
+                  text: "# Document\n\nText.",
+                  indexedText: "# Document\n\nText.",
+                  startOffset: 0,
+                  endOffset: 17,
+                  startLine: 1,
+                  endLine: 3,
+                  headingOffsets: [],
+                  symbol: null,
+                  indexing: null,
+                  startPage: null,
+                  endPage: null,
+                },
+              ],
+            },
+            lexical: {
+              total: 1,
+              truncated: false,
+              items: [
+                {
+                  chunkNumber: 0,
+                  indexedText: "Document\n# Document\n\nText.",
+                  searchVector: "'document':1,2 'text':3",
+                },
+              ],
+            },
+            graph: null,
+            notices: [],
+            persisted: false,
+          }}
+        />
+      </KitSection>
+
+      <KitSection
+        name="graph-evidence"
+        title={t("uiKit.graph.title", "Graph evidence")}
+        description={t(
+          "uiKit.graph.description",
+          "A relation keeps its owner, role, resolution and exact-version location together. Uncertain evidence never shares the definite-usage style.",
+        )}
+      >
+        <GraphEvidenceTable
+          titles={new Map([["sample-document", "Parser.java"]])}
+          edges={[
+            {
+              id: "resolved",
+              sourceDefinitionId: "sample-owner",
+              ownerKey: "Parser#parse()",
+              targetDefinitionId: "sample-target",
+              candidates: [],
+              role: "CALLS",
+              origin: "BODY",
+              factOrigin: "ASSERTED",
+              status: "RESOLVED",
+              reliable: true,
+              writtenTarget: "read",
+              reason: null,
+              evidence: {
+                documentId: "sample-document",
+                versionId: "sample-version",
+                parseJobId: "sample-parse",
+                selectionJobId: "sample-selection",
+                contributionId: "sample-contribution",
+                factId: "reference:0",
+                providerId: "java-source",
+                attributes: {},
+                location: {
+                  kind: "TEXT",
+                  startOffset: 24,
+                  endOffset: 30,
+                  startLine: 4,
+                  endLine: 4,
+                  page: null,
+                  anchor: null,
+                  path: null,
+                  region: {},
+                },
+              },
+            },
+            {
+              id: "uncertain",
+              sourceDefinitionId: "sample-owner",
+              ownerKey: "Parser#parse()",
+              targetDefinitionId: null,
+              candidates: [],
+              role: "LINKS_TO",
+              origin: "RULE",
+              factOrigin: "MATCHED",
+              status: "UNRESOLVED",
+              reliable: true,
+              writtenTarget: "convert",
+              reason: "Receiver type is unknown.",
+              evidence: {
+                documentId: "sample-document",
+                versionId: "sample-version",
+                parseJobId: "sample-parse",
+                selectionJobId: "sample-selection",
+                contributionId: "sample-contribution",
+                factId: "link:1",
+                providerId: "document-structure",
+                attributes: {},
+                location: {
+                  kind: "ANCHOR",
+                  startOffset: null,
+                  endOffset: null,
+                  startLine: null,
+                  endLine: null,
+                  page: null,
+                  anchor: "installation",
+                  path: null,
+                  region: {},
+                },
+              },
+            },
+          ]}
+        />
       </KitSection>
 
       <KitSection
@@ -1084,7 +1257,10 @@ export function UiKit() {
       >
         <div className="grid gap-4">
           {JOB_TRACK_SAMPLES.map((sample) => (
-            <div key={sample.caption} className="grid grid-cols-[calc(180px*var(--ui-scale))_1fr] items-center gap-3 max-[700px]:grid-cols-1">
+            <div
+              key={sample.caption}
+              className="grid grid-cols-[calc(180px*var(--ui-scale))_1fr] items-center gap-3 max-[700px]:grid-cols-1"
+            >
               <span className="text-xs text-secondary">{sample.caption}</span>
               <JobTrack job={sample.job} workerAlive={sample.workerAlive} />
             </div>

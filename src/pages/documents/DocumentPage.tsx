@@ -17,6 +17,7 @@ import {
   submissionKey,
   type ProcessingProfile,
   type ProcessingRun,
+  type ProcessingRequest,
   type VectorGeneration,
 } from "../../lib/pipeline";
 import { useTranslation } from "../../translations/TranslationProvider";
@@ -27,7 +28,8 @@ import { RemoveDocumentButton, RemovedDocumentNotice } from "./DocumentRemoval";
 import { DocumentOriginStrip } from "./DocumentOriginStrip";
 import { generationOfVersion, loadDocumentPipeline } from "./documentPipeline";
 import { PipelineStrip } from "./pipeline/PipelineStrip";
-import { ProcessDialog } from "./pipeline/ProcessDialog";
+import { ManagementTab } from "./tabs/ManagementTab";
+import { RelationsTab } from "./tabs/RelationsTab";
 import { ProfileQuickSettings } from "../profiles/ProfileQuickSettings";
 import { ChunksTab } from "./tabs/ChunksTab";
 import { JournalTab } from "./tabs/JournalTab";
@@ -42,8 +44,8 @@ import { useAddressChange } from "../../application/useAddressChange";
 const TERMINAL = new Set(["SUCCEEDED", "FAILED", "CANCELLED"]);
 
 /**
- * One document and everything that happened to it: captured versions, the run that chunked and indexed
- * one, whether search can find it, and its vectors — each step with its own action, nothing hidden.
+ * One document, its preparation runs and their independent outputs: parse, chunks, lexical entries,
+ * selected relations and published graphs. Preparation does not require publication in search.
  */
 export function DocumentPage() {
   const { workspace } = useReadySession();
@@ -59,7 +61,6 @@ export function DocumentPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [processing, setProcessing] = useState<ProcessingRun | null>(null);
   const [vectorising, setVectorising] = useState<VectorGeneration | null>(null);
-  const [processOpen, setProcessOpen] = useState(false);
   const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
   const [vectoriseOpen, setVectoriseOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -80,7 +81,23 @@ export function DocumentPage() {
       mayReadSources,
     ],
   );
-  usePageTitle(pipeline.status === "ready" ? pipeline.data.document.title : t("documents.column.document", "Document"));
+  const selectedVersionId =
+    pipeline.status === "ready"
+      ? (pipeline.data.versions.find((item) => item.id === search.version)?.id ??
+        pipeline.data.document.latestVersionId)
+      : null;
+  const runHistory = useResource(
+    () =>
+      selectedVersionId
+        ? pipelineApi.processingHistory(workspaceId, documentId, selectedVersionId)
+        : Promise.resolve([]),
+    [workspaceId, documentId, selectedVersionId, refreshKey],
+  );
+  usePageTitle(
+    pipeline.status === "ready"
+      ? pipeline.data.document.title
+      : t("documents.column.document", "Document"),
+  );
 
   const refresh = () => {
     setRefreshKey((current) => current + 1);
@@ -126,7 +143,10 @@ export function DocumentPage() {
             ? {
                 tone: "good",
                 title: t("documents.processed", "Processed"),
-                description: t("documents.processedDescription", "Chunks and index entries are ready."),
+                description: t(
+                  "preparation.savedDescription",
+                  "The selected preparation steps have finished. Their results are available in this document.",
+                ),
               }
             : {
                 tone: "error",
@@ -233,7 +253,10 @@ export function DocumentPage() {
           kind: "not-found",
           status: null,
           title: t("documents.noVersions", "No versions"),
-          description: t("documents.noVersionsDescription", "This document has no captured version."),
+          description: t(
+            "documents.noVersionsDescription",
+            "This document has no captured version.",
+          ),
           detail: null,
         }}
       />
@@ -241,6 +264,29 @@ export function DocumentPage() {
   }
   const isLatest = version.id === document.latestVersionId;
   const generation = generationOfVersion(generations, version.id);
+  const runs = runHistory.status === "ready" ? runHistory.data : [];
+  const completedRun = runs.find((run) => run.job.status === "SUCCEEDED") ?? null;
+  const chunkRun =
+    runs.find((run) => run.job.status === "SUCCEEDED" && run.preparation.steps.includes("chunk")) ??
+    null;
+  const parseReference =
+    completedRun === null
+      ? generation
+      : {
+          jobId: completedRun.job.id,
+          versionId: completedRun.versionId,
+          state: completedRun.job.status,
+        };
+  const chunkReference =
+    chunkRun === null
+      ? generation
+      : {
+          jobId: chunkRun.job.id,
+          versionId: chunkRun.versionId,
+          state:
+            generations.find((item) => item.jobId === chunkRun.job.id)?.state ??
+            chunkRun.job.status,
+        };
   const tab: DocumentTab = search.tab ?? "read";
   const sourceName = source.status === "ready" && source.data !== null ? source.data.name : null;
   const removed = document.removedAt !== null;
@@ -262,7 +308,7 @@ export function DocumentPage() {
     });
   };
 
-  const startProcessing = async (profile: ProcessingProfile) => {
+  const startProcessing = async (profile: ProcessingProfile, request?: ProcessingRequest) => {
     setSubmitting(true);
     try {
       const run = await pipelineApi.startProcessing(
@@ -271,19 +317,23 @@ export function DocumentPage() {
         version.id,
         profile.id,
         submissionKey("process", version.id),
+        request,
       );
       setProcessing(run);
-      setProcessOpen(false);
       refreshActivity();
       const workerStopped = activity !== null && !activity.workerAlive;
       notify({
         tone: workerStopped ? "neutral" : "good",
         title: t("documents.processingQueued", "Queued for processing"),
         description: workerStopped
-          ? t("documents.processingQueuedStalled", "{profile} on version {version}. The worker is not running, so it waits until the worker starts.", {
-              profile: profile.name,
-              version: version.versionNumber,
-            })
+          ? t(
+              "documents.processingQueuedStalled",
+              "{profile} on version {version}. The worker is not running, so it waits until the worker starts.",
+              {
+                profile: profile.name,
+                version: version.versionNumber,
+              },
+            )
           : t("documents.processingStartedDescription", "{profile} on version {version}", {
               profile: profile.name,
               version: version.versionNumber,
@@ -364,7 +414,11 @@ export function DocumentPage() {
             </Badge>
           )
         }
-        lead={<span className={`numeric ${EXTERNAL_IDENTIFIER}`}>{document.origin?.path ?? document.externalId}</span>}
+        lead={
+          <span className={`numeric ${EXTERNAL_IDENTIFIER}`}>
+            {document.origin?.path ?? document.externalId}
+          </span>
+        }
         actions={
           <>
             {versions.length > 1 && (
@@ -383,8 +437,12 @@ export function DocumentPage() {
                 {versions.map((candidate) => (
                   <option key={candidate.id} value={candidate.id}>
                     {candidate.id === document.latestVersionId
-                      ? t("documents.versionCurrent", "Version {number} · current", { number: candidate.versionNumber })
-                      : t("documents.version", "Version {number}", { number: candidate.versionNumber })}
+                      ? t("documents.versionCurrent", "Version {number} · current", {
+                          number: candidate.versionNumber,
+                        })
+                      : t("documents.version", "Version {number}", {
+                          number: candidate.versionNumber,
+                        })}
                   </option>
                 ))}
               </Select>
@@ -420,10 +478,16 @@ export function DocumentPage() {
           version={version}
           isLatest={isLatest}
           generation={generation}
+          preparedRun={completedRun}
           runningProcess={processing}
           pendingJob={pendingJob}
           workerAlive={activity?.workerAlive ?? true}
-          profileName={generation === null ? null : (processingProfiles.find((candidate) => candidate.id === generation.profileId)?.name ?? null)}
+          profileName={
+            generation === null
+              ? null
+              : (processingProfiles.find((candidate) => candidate.id === generation.profileId)
+                  ?.name ?? null)
+          }
           onOpenProfile={
             generation === null
               ? undefined
@@ -439,7 +503,7 @@ export function DocumentPage() {
           mayVectorise={permissions.may(PERMISSIONS.automationManage) && !removed}
           busy={busy}
           onProcess={() => {
-            setProcessOpen(true);
+            go({ tab: "manage" });
           }}
           onPublish={(published) => void setPublished(published)}
           onVectorise={() => {
@@ -455,22 +519,60 @@ export function DocumentPage() {
           go({ tab: next });
         }}
         items={[
+          { key: "manage", label: t("preparation.manage", "Manage") },
+          { key: "relations", label: t("preparation.relations", "Relations") },
           { key: "read", label: t("documents.tab.read", "Read") },
           { key: "text", label: t("documents.tab.text", "Parsed text") },
-          { key: "chunks", label: t("documents.tab.chunks", "Chunks"), count: generation?.entryCount },
+          {
+            key: "chunks",
+            label: t("documents.tab.chunks", "Chunks"),
+            count: generation?.entryCount,
+          },
           { key: "trace", label: t("documents.tab.trace", "Trace") },
-          { key: "versions", label: t("documents.column.versions", "Versions"), count: versions.length },
+          {
+            key: "versions",
+            label: t("documents.column.versions", "Versions"),
+            count: versions.length,
+          },
           { key: "origin", label: t("documents.tab.origin", "Origin") },
           { key: "journal", label: t("documents.tab.journal", "Journal") },
         ]}
       />
       <TabPanel tabKey={tab}>
+        {tab === "manage" &&
+          (runHistory.status === "loading" ? (
+            <Waiting label={t("preparation.history", "Runs of this version")} lines={3} />
+          ) : runHistory.status === "failed" ? (
+            <ProblemState layout="section" problem={runHistory.problem} />
+          ) : (
+            <ManagementTab
+              workspaceId={workspaceId}
+              documentId={document.id}
+              versionId={version.id}
+              profiles={processingProfiles}
+              runs={runs}
+              submitting={submitting || pendingJob !== null}
+              mayProcess={mayWriteDocuments && !removed && mayReadAutomation}
+              onSubmit={(profile, request) => void startProcessing(profile, request)}
+            />
+          ))}
+        {tab === "relations" && (
+          <RelationsTab
+            workspaceId={workspaceId}
+            documentId={document.id}
+            versionId={version.id}
+            runs={runs}
+            mayManage={mayWriteDocuments && !removed && mayReadAutomation}
+            onPrepare={() => go({ tab: "manage" })}
+          />
+        )}
+
         {tab === "read" && (
           <ReadTab
             workspaceId={workspaceId}
             documentId={document.id}
             version={version}
-            generation={generation}
+            generation={parseReference}
             documentPath={document.origin?.path ?? document.externalId}
             address={{ view: search.view, lines: search.lines, page: search.page }}
             onAddressChange={(reading) => {
@@ -482,13 +584,13 @@ export function DocumentPage() {
           <ParsedTextTab
             workspaceId={workspaceId}
             documentId={document.id}
-            generation={generation}
+            generation={parseReference}
           />
         )}
         {tab === "chunks" && (
           <ChunksTab
             workspaceId={workspaceId}
-            generation={generation}
+            generation={chunkReference}
             documentPath={document.origin?.path ?? document.externalId}
             onChanged={refresh}
           />
@@ -507,25 +609,19 @@ export function DocumentPage() {
             }}
           />
         )}
-        {tab === "trace" && <TraceTab workspaceId={workspaceId} generation={generation} />}
+        {tab === "trace" && <TraceTab workspaceId={workspaceId} generation={parseReference} />}
         {tab === "origin" && (
-          <OriginTab document={document} versions={versions} source={source.status === "ready" ? source.data : null} />
+          <OriginTab
+            document={document}
+            versions={versions}
+            source={source.status === "ready" ? source.data : null}
+          />
         )}
         {tab === "journal" && (
           <JournalTab workspaceId={workspaceId} documentId={document.id} generation={generation} />
         )}
       </TabPanel>
 
-      <ProcessDialog
-        open={processOpen}
-        profiles={processingProfiles}
-        versionNumber={version.versionNumber}
-        submitting={submitting}
-        onClose={() => {
-          setProcessOpen(false);
-        }}
-        onSubmit={(profile) => void startProcessing(profile)}
-      />
       {generation !== null && (
         <ProfileQuickSettings
           open={profileSettingsOpen}

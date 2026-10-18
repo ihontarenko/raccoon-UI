@@ -20,6 +20,10 @@ type Translate = ReturnType<typeof useTranslation>["t"];
 
 export function stageName(stage: RuleStage, t: Translate): string {
   switch (stage) {
+    case "SEMANTIC_EXTRACTION":
+      return t("rules.stage.semanticExtraction", "Semantic extraction");
+    case "RELATIONS":
+      return t("rules.stage.relations", "Semantic selection");
     case "MATERIAL":
       return t("rules.stage.arrivingFiles", "Arriving files");
     case "BLOCKS":
@@ -38,6 +42,16 @@ export function stageName(stage: RuleStage, t: Translate): string {
 /** What a rule at a stage sees, and who runs it — the line under a stage's heading. */
 export function stagePurpose(stage: RuleStage, t: Translate): string {
   switch (stage) {
+    case "SEMANTIC_EXTRACTION":
+      return t(
+        "rules.stagePurpose.semanticExtraction",
+        "Derive explicit facts from retained blocks, with rule provenance.",
+      );
+    case "RELATIONS":
+      return t(
+        "rules.stagePurpose.relations",
+        "Keep or drop provider facts without changing evidence.",
+      );
     case "MATERIAL":
       return t(
         "rules.stagePurpose.material",
@@ -80,6 +94,18 @@ export function stagePlace(stage: RuleStage, t: Translate): string {
 
 export function factName(fact: RuleFact, t: Translate): string {
   switch (fact) {
+    case "SEMANTIC_PROVIDER":
+      return t("rules.fact.semanticProvider", "Semantic provider");
+    case "ENTITY_KIND":
+      return t("rules.fact.entityKind", "Entity kind");
+    case "RELATION_ROLE":
+      return t("rules.fact.relationRole", "Relation role");
+    case "FACT_ORIGIN":
+      return t("rules.fact.factOrigin", "Fact origin");
+    case "TARGET_NAMESPACE":
+      return t("rules.fact.targetNamespace", "Target namespace");
+    case "TARGET_KEY":
+      return t("rules.fact.targetKey", "Target key");
     case "PATH":
       return t("sourceRules.field.path", "Path");
     case "TITLE":
@@ -157,6 +183,10 @@ export function conditionTypeName(type: ConditionType, t: Translate): string {
 
 export function actionTypeName(type: ActionType, t: Translate): string {
   switch (type) {
+    case "DEFINE_ENTITY":
+      return t("rules.action.defineEntity", "Define an entity");
+    case "LINK_ENTITY":
+      return t("rules.action.linkEntity", "Link to an entity");
     case "KEEP":
       return t("rules.action.keep", "Keep");
     case "DROP":
@@ -268,6 +298,17 @@ export function describeCondition(condition: RuleCondition, t: Translate): strin
 /** An action as a phrase. */
 export function describeAction(action: RuleAction, t: Translate): string {
   switch (action.type) {
+    case "DEFINE_ENTITY":
+      return t("rules.says.defineEntity", "define {namespace}:{key}", {
+        namespace: action.namespace,
+        key: action.key,
+      });
+    case "LINK_ENTITY":
+      return t("rules.says.linkEntity", "{role} {namespace}:{key}", {
+        role: action.role,
+        namespace: action.namespace,
+        key: action.key,
+      });
     case "KEEP":
       return t("rules.says.keep", "keep");
     case "DROP":

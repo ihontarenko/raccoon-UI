@@ -3,8 +3,19 @@
 // download instead of loading each when it is opened.
 
 /** A document's tabs in the order processing runs: the original, how it was parsed, the chunks it was cut into. */
-export type DocumentTab = "read" | "text" | "chunks" | "trace" | "versions" | "origin" | "journal";
-export const DOCUMENT_TABS: DocumentTab[] = ["read", "text", "chunks", "trace", "versions", "origin", "journal"];
+export type DocumentTab =
+  "manage" | "relations" | "read" | "text" | "chunks" | "trace" | "versions" | "origin" | "journal";
+export const DOCUMENT_TABS: DocumentTab[] = [
+  "manage",
+  "relations",
+  "read",
+  "text",
+  "chunks",
+  "trace",
+  "versions",
+  "origin",
+  "journal",
+];
 
 /** Reads a document tab from the address; the retired «Index entries» tab lives in «Chunks» now, and old links open it. */
 export function documentTabOf(value: unknown): DocumentTab | undefined {
@@ -42,7 +53,8 @@ export function pageOf(value: unknown): number | undefined {
   return Number.isInteger(number) && number > 0 ? number : undefined;
 }
 
-export type IndexTab = "documents" | "entries" | "history" | "vectors" | "preflights" | "journal";
+export type IndexTab =
+  "documents" | "entries" | "history" | "vectors" | "preflights" | "journal" | "graph";
 export const INDEX_TABS: IndexTab[] = [
   "documents",
   "entries",
@@ -50,6 +62,7 @@ export const INDEX_TABS: IndexTab[] = [
   "vectors",
   "preflights",
   "journal",
+  "graph",
 ];
 
 export type AutomationTab = "scripts" | "groups" | "schedules" | "evaluations" | "log" | "examples";

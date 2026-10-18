@@ -1,5 +1,10 @@
 import type { ReactNode } from "react";
-import { formatBytes, formatDateTime, labelOfCode, shortIdentifier } from "../../../application/format";
+import {
+  formatBytes,
+  formatDateTime,
+  labelOfCode,
+  shortIdentifier,
+} from "../../../application/format";
 import type { DocumentVersionView } from "../../../lib/contracts";
 import type { IndexGeneration, ProcessingRun, VectorGeneration } from "../../../lib/pipeline";
 import type { WorkspaceJob } from "../../../lib/workspaceJobs";
@@ -7,7 +12,15 @@ import { useTranslation } from "../../../translations/TranslationProvider";
 import { Badge, Button, Icon, type BadgeTone, type IconName } from "../../../ui/primitives";
 import { JOB_STATUSES } from "../../jobs/jobLabels";
 import { LEXICAL_GENERATION_STATES } from "../generationLabels";
-import { PIPELINE, STEP, STEP_ACTION, STEP_BODY, STEP_HEAD, STEP_NUMBER, STEP_TITLE } from "../documentPageClasses";
+import {
+  PIPELINE,
+  STEP,
+  STEP_ACTION,
+  STEP_BODY,
+  STEP_HEAD,
+  STEP_NUMBER,
+  STEP_TITLE,
+} from "../documentPageClasses";
 
 type StepState = "done" | "active" | "waiting" | "attention" | "blocked";
 
@@ -52,6 +65,7 @@ interface PipelineStripProperties {
   generation: IndexGeneration | null;
   /** A processing run started from this page and not finished yet. */
   runningProcess: ProcessingRun | null;
+  preparedRun?: ProcessingRun | null;
   /** This document's processing job as the workspace's activity sees it, wherever it was started from. */
   pendingJob: WorkspaceJob | null;
   /** Whether a worker is there to take the queue; a queued job without one waits indefinitely. */
@@ -79,6 +93,7 @@ export function PipelineStrip({
   isLatest,
   generation,
   runningProcess,
+  preparedRun,
   pendingJob,
   workerAlive,
   profileName,
@@ -101,20 +116,52 @@ export function PipelineStrip({
   const publishedVectors = liveVectors.find((candidate) => candidate.state === "PUBLISHED") ?? null;
   const buildingVectors = liveVectors.find((candidate) => candidate.state === "BUILDING") ?? null;
 
-  const processedState: StepState = waitsForWorker ? "attention" : processing ? "active" : generation === null ? "waiting" : generation.state === "PURGED" ? "attention" : "done";
+  const processedState: StepState = waitsForWorker
+    ? "attention"
+    : processing
+      ? "active"
+      : generation === null && !preparedRun
+        ? "waiting"
+        : generation?.state === "PURGED"
+          ? "attention"
+          : "done";
   const publishedState: StepState =
-    generation === null ? "blocked" : published ? "done" : generation.state === "PURGED" ? "blocked" : "attention";
+    generation === null
+      ? "blocked"
+      : published
+        ? "done"
+        : generation.state === "PURGED"
+          ? "blocked"
+          : "attention";
   const vectorState: StepState =
-    buildingVectors !== null ? "active" : publishedVectors !== null ? "done" : published ? "waiting" : "blocked";
+    buildingVectors !== null
+      ? "active"
+      : publishedVectors !== null
+        ? "done"
+        : published
+          ? "waiting"
+          : "blocked";
 
   return (
-    <ol className={PIPELINE} aria-label={t("documents.pipeline.label", "Where this version stands")}>
-      <Step number={1} icon="documents" title={t("documents.pipeline.captured", "Captured")} state="done" status={t("documents.pipeline.version", "Version {number}", { number: version.versionNumber })}>
+    <ol
+      className={PIPELINE}
+      aria-label={t("documents.pipeline.label", "Where this version stands")}
+    >
+      <Step
+        number={1}
+        icon="documents"
+        title={t("documents.pipeline.captured", "Captured")}
+        state="done"
+        status={t("documents.pipeline.version", "Version {number}", {
+          number: version.versionNumber,
+        })}
+      >
         <p>
           {formatBytes(version.sizeBytes)} · <span className="numeric">{version.mediaType}</span>
         </p>
         <p className="text-xs text-muted">
-          {formatDateTime(version.createdAt)} · <span className="numeric">{version.sha256.slice(0, 12)}</span>
+          {formatDateTime(version.createdAt)} ·{" "}
+          <span className="numeric">{version.sha256.slice(0, 12)}</span>
         </p>
       </Step>
 
@@ -128,13 +175,26 @@ export function PipelineStrip({
             ? t("documents.pipeline.waitingForWorker", "Waiting for the worker")
             : processing && jobStatus !== null
               ? labelOfCode(JOB_STATUSES, jobStatus)
-              : generation === null
-                ? t("documents.pipeline.notYet", "Not yet")
-                : plural("documents.pipeline.chunkCount", generation.entryCount, { one: "{count} chunk", other: "{count} chunks" })
+              : generation === null && preparedRun
+                ? t("preparation.savedSteps", "Prepared: {steps}", {
+                    steps: preparedRun.preparation.steps.join(" / "),
+                  })
+                : generation === null
+                  ? t("documents.pipeline.notYet", "Not yet")
+                  : plural("documents.pipeline.chunkCount", generation.entryCount, {
+                      one: "{count} chunk",
+                      other: "{count} chunks",
+                    })
         }
         action={
           mayProcess && (
-            <Button variant={generation === null ? "primary" : "quiet"} flush={generation !== null} icon="play" disabled={processing || busy} onClick={onProcess}>
+            <Button
+              variant={generation === null ? "primary" : "quiet"}
+              flush={generation !== null}
+              icon="play"
+              disabled={processing || busy}
+              onClick={onProcess}
+            >
               {processing
                 ? t("documents.pipeline.processing", "Processing…")
                 : generation === null
@@ -146,24 +206,47 @@ export function PipelineStrip({
       >
         {waitsForWorker ? (
           <p className="text-xs text-warn">
-            {t("documents.pipeline.workerDown", "Queued, but the worker is not running, so nothing is parsed until it starts:")}{" "}
+            {t(
+              "documents.pipeline.workerDown",
+              "Queued, but the worker is not running, so nothing is parsed until it starts:",
+            )}{" "}
             <code className="numeric">./jm.sh up raccoon:worker</code>
           </p>
         ) : jobStatus === "QUEUED" ? (
-          <p className="text-xs text-secondary">{t("documents.pipeline.queued", "Queued. The worker takes it in a moment; this page follows the job.")}</p>
+          <p className="text-xs text-secondary">
+            {t(
+              "documents.pipeline.queued",
+              "Queued. The worker takes it in a moment; this page follows the job.",
+            )}
+          </p>
         ) : processing ? (
           <p className="text-xs text-secondary">
             {runningProcess !== null
-              ? t("documents.pipeline.runningWithRevision", "Parsing, chunking and indexing with profile revision {revision}. This page follows the job.", { revision: runningProcess.profileRevision })
-              : t("documents.pipeline.running", "Parsing, chunking and indexing. This page follows the job.")}
+              ? t(
+                  "preparation.runningRevision",
+                  "Running the selected steps with profile revision {revision}. This page follows the job.",
+                  { revision: runningProcess.profileRevision },
+                )
+              : t(
+                  "preparation.running",
+                  "Running the selected preparation steps. This page follows the job.",
+                )}
           </p>
         ) : generation === null ? (
-          <p className="text-xs text-secondary">{t("documents.pipeline.processHint", "Parse the original, cut it into chunks and write a lexical index generation.")}</p>
+          <p className="text-xs text-secondary">
+            {t(
+              "preparation.stageHelp",
+              "Choose which outputs to prepare under Manage. Parsed text, chunks and relations are independent of publication in search.",
+            )}
+          </p>
         ) : (
           <>
             <p className="text-xs text-secondary">
-              {t("documents.pipeline.generation", "Generation")} <span className="numeric">{shortIdentifier(generation.jobId)}</span> ·{" "}
-              {t("documents.pipeline.profileRevision", "profile revision {revision}", { revision: generation.profileRevision })}
+              {t("documents.pipeline.generation", "Generation")}{" "}
+              <span className="numeric">{shortIdentifier(generation.jobId)}</span> ·{" "}
+              {t("documents.pipeline.profileRevision", "profile revision {revision}", {
+                revision: generation.profileRevision,
+              })}
             </p>
             {profileName !== null && (
               <p className="flex flex-wrap items-center gap-x-2 text-xs">
@@ -185,7 +268,11 @@ export function PipelineStrip({
         icon="layers"
         title={t("documents.pipeline.searchable", "Searchable")}
         state={publishedState}
-        status={generation === null ? t("documents.pipeline.waitsForProcessing", "Waits for processing") : labelOfCode(LEXICAL_GENERATION_STATES, generation.state)}
+        status={
+          generation === null
+            ? t("documents.pipeline.waitsForProcessing", "Waits for processing")
+            : labelOfCode(LEXICAL_GENERATION_STATES, generation.state)
+        }
         action={
           mayManageIndex &&
           generation !== null &&
@@ -195,7 +282,16 @@ export function PipelineStrip({
               {t("documents.pipeline.withdraw", "Withdraw")}
             </Button>
           ) : (
-            <Button variant="primary" disabled={busy || !isLatest} title={isLatest ? undefined : t("documents.pipeline.onlyCurrent", "Only the current version can be published")} onClick={() => onPublish(true)}>
+            <Button
+              variant="primary"
+              disabled={busy || !isLatest}
+              title={
+                isLatest
+                  ? undefined
+                  : t("documents.pipeline.onlyCurrent", "Only the current version can be published")
+              }
+              onClick={() => onPublish(true)}
+            >
               {t("documents.pipeline.publish", "Publish")}
             </Button>
           ))
@@ -203,12 +299,24 @@ export function PipelineStrip({
       >
         <p className="text-xs text-secondary">
           {generation === null
-            ? t("documents.pipeline.searchHintNone", "Search finds this version once a generation is published.")
+            ? t(
+                "documents.pipeline.searchHintNone",
+                "Search finds this version once a generation is published.",
+              )
             : published
-              ? t("documents.pipeline.searchHintPublished", "Search finds this version through its keywords.")
+              ? t(
+                  "documents.pipeline.searchHintPublished",
+                  "Search finds this version through its keywords.",
+                )
               : isLatest
-                ? t("documents.pipeline.searchHintBuilt", "Built but not searchable. Publish it to let search find it.")
-                : t("documents.pipeline.searchHintOlder", "An older version; search uses the current one.")}
+                ? t(
+                    "documents.pipeline.searchHintBuilt",
+                    "Built but not searchable. Publish it to let search find it.",
+                  )
+                : t(
+                    "documents.pipeline.searchHintOlder",
+                    "An older version; search uses the current one.",
+                  )}
         </p>
       </Step>
 
@@ -228,20 +336,35 @@ export function PipelineStrip({
         }
         action={
           mayVectorise && (
-            <Button variant={publishedVectors === null && published ? "primary" : "quiet"} icon="vectors" disabled={!published || busy || buildingVectors !== null} onClick={onVectorise}>
-              {publishedVectors === null ? t("documents.pipeline.vectorise", "Vectorise") : t("documents.pipeline.vectoriseAgain", "Vectorise again")}
+            <Button
+              variant={publishedVectors === null && published ? "primary" : "quiet"}
+              icon="vectors"
+              disabled={!published || busy || buildingVectors !== null}
+              onClick={onVectorise}
+            >
+              {publishedVectors === null
+                ? t("documents.pipeline.vectorise", "Vectorise")
+                : t("documents.pipeline.vectoriseAgain", "Vectorise again")}
             </Button>
           )
         }
       >
         {publishedVectors !== null ? (
           <p className="text-xs text-secondary">
-            {publishedVectors.model.provider} · <span className="numeric">{publishedVectors.model.model}</span> · {plural("documents.pipeline.vectorCount", publishedVectors.storedRecords, { one: "{count} vector", other: "{count} vectors" })}
+            {publishedVectors.model.provider} ·{" "}
+            <span className="numeric">{publishedVectors.model.model}</span> ·{" "}
+            {plural("documents.pipeline.vectorCount", publishedVectors.storedRecords, {
+              one: "{count} vector",
+              other: "{count} vectors",
+            })}
           </p>
         ) : (
           <p className="text-xs text-secondary">
             {published
-              ? t("documents.pipeline.vectoriseHint", "Embed the published chunks for semantic search. A preflight shows tokens and cost first.")
+              ? t(
+                  "documents.pipeline.vectoriseHint",
+                  "Embed the published chunks for semantic search. A preflight shows tokens and cost first.",
+                )
               : t("documents.pipeline.needsPublished", "Needs a published index generation.")}
           </p>
         )}

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useResource } from "../../../application/useResource";
 import { collectAllPages } from "../../../lib/api";
-import { pipelineApi, type IndexGeneration, type ProcessingEvent } from "../../../lib/pipeline";
+import { pipelineApi, type ProcessingReference, type ProcessingEvent } from "../../../lib/pipeline";
 import { PREPARATION_LAYERS } from "../../../lib/preparationLayers";
 import { useTranslation } from "../../../translations/TranslationProvider";
 import { EmptyState, ProblemState, Waiting } from "../../../ui/components";
@@ -19,17 +19,33 @@ const PLACE = [
   "data-[outcome=MISSING]:border-dashed data-[outcome=MISSING]:border-line-strong data-[outcome=MISSING]:text-muted",
 ].join(" ");
 
-const OUTCOME_TONE: Record<string, BadgeTone> = { RAN: "good", OFF: "neutral", NOT_APPLICABLE: "neutral", MISSING: "warn" };
+const OUTCOME_TONE: Record<string, BadgeTone> = {
+  RAN: "good",
+  OFF: "neutral",
+  NOT_APPLICABLE: "neutral",
+  MISSING: "warn",
+};
 
 /**
  * What every layer did to this version in the run that built its index generation: ran (and how much), was switched off
  * by the profile, or had nothing to work on — in the order the document passed them. Read from the run's own LAYER
  * events, so it is what happened, not what the profile says now.
  */
-export function TraceTab({ workspaceId, generation }: { workspaceId: string; generation: IndexGeneration | null }) {
+export function TraceTab({
+  workspaceId,
+  generation,
+}: {
+  workspaceId: string;
+  generation: ProcessingReference | null;
+}) {
   const { t, say } = useTranslation();
   const events = useResource<ProcessingEvent[] | null>(
-    () => (generation === null ? Promise.resolve(null) : collectAllPages((page) => pipelineApi.processingEvents(workspaceId, generation.jobId, page))),
+    () =>
+      generation === null
+        ? Promise.resolve(null)
+        : collectAllPages((page) =>
+            pipelineApi.processingEvents(workspaceId, generation.jobId, page),
+          ),
     [workspaceId, generation?.jobId],
   );
 
@@ -37,7 +53,10 @@ export function TraceTab({ workspaceId, generation }: { workspaceId: string; gen
     return (
       <EmptyState
         title={t("documents.trace.noRun", "No run yet")}
-        description={t("documents.trace.noRunText", "The trace of every layer appears once this version is processed.")}
+        description={t(
+          "documents.trace.noRunText",
+          "The trace of every layer appears once this version is processed.",
+        )}
       />
     );
   }
@@ -47,7 +66,11 @@ export function TraceTab({ workspaceId, generation }: { workspaceId: string; gen
   if (events.status === "failed") {
     return <ProblemState layout="section" problem={events.problem} />;
   }
-  const byLayer = new Map((events.data ?? []).filter((event) => event.type === "LAYER").map((event) => [event.stepId ?? "", event]));
+  const byLayer = new Map(
+    (events.data ?? [])
+      .filter((event) => event.type === "LAYER")
+      .map((event) => [event.stepId ?? "", event]),
+  );
   const outcomeWord = (outcome: string) =>
     outcome === "RAN"
       ? t("documents.trace.ran", "Ran")
@@ -61,7 +84,10 @@ export function TraceTab({ workspaceId, generation }: { workspaceId: string; gen
     <div className="grid gap-4">
       {byLayer.size === 0 && (
         <p className="m-0 text-xs text-warn">
-          {t("documents.trace.beforeLayers", "This run predates layer tracing. Process the version again to see what each layer did.")}
+          {t(
+            "documents.trace.beforeLayers",
+            "This run predates layer tracing. Process the version again to see what each layer did.",
+          )}
         </p>
       )}
       <ol className={STRIP} aria-label={t("documents.trace.label", "Layers this version passed")}>
@@ -77,7 +103,10 @@ export function TraceTab({ workspaceId, generation }: { workspaceId: string; gen
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <strong className="text-sm text-ink">{say(layer.name)}</strong>
                   <Badge tone={OUTCOME_TONE[outcome] ?? "neutral"}>{outcomeWord(outcome)}</Badge>
-                  <Link to={layer.page} className="ml-auto text-xs font-semibold text-accent-text hover:underline">
+                  <Link
+                    to={layer.page}
+                    className="ml-auto text-xs font-semibold text-accent-text hover:underline"
+                  >
                     {t("pipeline.mechanism", "How it works")}
                   </Link>
                 </div>
@@ -90,9 +119,8 @@ export function TraceTab({ workspaceId, generation }: { workspaceId: string; gen
         })}
       </ol>
       <p className="m-0 text-xs text-secondary">
-        {t("documents.trace.result", "Result: index generation {generation} · {entries} entries · {state}", {
+        {t("documents.trace.runResult", "Processing run {generation} / {state}", {
           generation: generation.jobId.slice(0, 8),
-          entries: generation.entryCount,
           state: generation.state.toLowerCase(),
         })}
       </p>

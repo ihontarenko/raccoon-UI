@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { pipelineApi, type Figure, type IndexGeneration } from "../../../lib/pipeline";
+import { pipelineApi, type Figure, type ProcessingReference } from "../../../lib/pipeline";
 import { useTranslation } from "../../../translations/TranslationProvider";
 import { Notice, ProblemState, Waiting } from "../../../ui/components";
 import { Button } from "../../../ui/primitives";
 import { droppedBlockIndexes, useParsedOriginal } from "./parsedOriginal";
 import type { ReadingViewProperties } from "./readingViews";
-import { rebuildDocument, type RebuiltCell, type RebuiltList, type RebuiltNode, type RebuiltTable } from "./rebuiltDocument";
+import {
+  rebuildDocument,
+  type RebuiltCell,
+  type RebuiltList,
+  type RebuiltNode,
+  type RebuiltTable,
+} from "./rebuiltDocument";
 
 /*
  * The rebuilt document: a dense reading column on the reader's surface. Type carries the hierarchy;
@@ -31,8 +37,7 @@ const PART = "font-heading text-xl font-bold tracking-[-0.01em]";
 
 const DESCRIPTION = "text-md text-secondary";
 
-const MAKER =
-  "ml-auto text-xs text-muted [font-variant-numeric:tabular-nums] max-[640px]:ml-0";
+const MAKER = "ml-auto text-xs text-muted [font-variant-numeric:tabular-nums] max-[640px]:ml-0";
 
 /*
  * ── Pages ────────────────────────────────────────────────────────────────────────────────────
@@ -77,7 +82,8 @@ const HEADING_SIZE: Record<"h2" | "h3" | "h4" | "h5" | "h6", string> = {
   h6: "text-base",
 };
 
-const PERMALINK = "ml-2 font-normal text-muted no-underline hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-text";
+const PERMALINK =
+  "ml-2 font-normal text-muted no-underline hover:text-accent-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-text";
 
 const PARAGRAPH = "mx-0 mt-0 mb-3 target:bg-accent-soft";
 
@@ -194,18 +200,31 @@ const PAGES_SHOWN = 24;
  * with the image of the drawing and the labels found on it. Every element is drawn from the block model; nothing of the
  * original is injected as markup. Page markers open the original at that page.
  */
-export function RebuiltView({ workspaceId, documentId, generation, onShowPage }: ReadingViewProperties) {
+export function RebuiltView({
+  workspaceId,
+  documentId,
+  generation,
+  onShowPage,
+}: ReadingViewProperties) {
   const { t } = useTranslation();
   const parsed = useParsedOriginal(workspaceId, documentId, generation);
   const [pagesShown, setPagesShown] = useState(PAGES_SHOWN);
 
   const nodes = useMemo(
-    () => (parsed.status === "ready" ? rebuildDocument(parsed.data.document, droppedBlockIndexes(parsed.data.outcome)) : []),
+    () =>
+      parsed.status === "ready"
+        ? rebuildDocument(parsed.data.document, droppedBlockIndexes(parsed.data.outcome))
+        : [],
     [parsed],
   );
 
   if (parsed.status === "loading") {
-    return <Waiting label={t("documents.rebuilt.loading", "Rebuilding the document from its parse")} lines={8} />;
+    return (
+      <Waiting
+        label={t("documents.rebuilt.loading", "Rebuilding the document from its parse")}
+        lines={8}
+      />
+    );
   }
   if (parsed.status === "failed") {
     return (
@@ -223,7 +242,10 @@ export function RebuiltView({ workspaceId, documentId, generation, onShowPage }:
   if (nodes.length === 0) {
     return (
       <Notice title={t("documents.rebuilt.empty", "Nothing to rebuild")}>
-        {t("documents.rebuilt.emptyDescription", "The parse kept no text: the original may be scanned, or the pipeline dropped everything.")}
+        {t(
+          "documents.rebuilt.emptyDescription",
+          "The parse kept no text: the original may be scanned, or the pipeline dropped everything.",
+        )}
       </Notice>
     );
   }
@@ -234,20 +256,30 @@ export function RebuiltView({ workspaceId, documentId, generation, onShowPage }:
   return (
     <div className={FRAME}>
       <article className={DOCUMENT} aria-label={t("documents.rebuilt.label", "Rebuilt document")}>
-        {identity !== undefined && identity !== null && (identity.part !== null || identity.description !== null) && (
-          <header className={IDENTITY}>
-            {identity.part !== null && <span className={PART}>{identity.part}</span>}
-            {identity.description !== null && <span className={DESCRIPTION}>{identity.description}</span>}
-            {(identity.manufacturer !== null || identity.revision !== null) && (
-              <span className={MAKER}>{[identity.manufacturer, identity.revision].filter((part) => part !== null).join(" · ")}</span>
-            )}
-          </header>
-        )}
+        {identity !== undefined &&
+          identity !== null &&
+          (identity.part !== null || identity.description !== null) && (
+            <header className={IDENTITY}>
+              {identity.part !== null && <span className={PART}>{identity.part}</span>}
+              {identity.description !== null && (
+                <span className={DESCRIPTION}>{identity.description}</span>
+              )}
+              {(identity.manufacturer !== null || identity.revision !== null) && (
+                <span className={MAKER}>
+                  {[identity.manufacturer, identity.revision]
+                    .filter((part) => part !== null)
+                    .join(" · ")}
+                </span>
+              )}
+            </header>
+          )}
         {renderNodes(shown, { workspaceId, documentId, generation, onShowPage })}
         {shown.length < nodes.length && (
           <div className={MORE_ROW}>
             <Button onClick={() => setPagesShown((current) => current + PAGES_SHOWN)}>
-              {t("documents.rebuilt.showMore", "Show the next {count} pages", { count: Math.min(PAGES_SHOWN, pageCount - pagesShown) })}
+              {t("documents.rebuilt.showMore", "Show the next {count} pages", {
+                count: Math.min(PAGES_SHOWN, pageCount - pagesShown),
+              })}
             </Button>
           </div>
         )}
@@ -259,7 +291,7 @@ export function RebuiltView({ workspaceId, documentId, generation, onShowPage }:
 interface DrawContext {
   workspaceId: string;
   documentId: string;
-  generation: IndexGeneration;
+  generation: ProcessingReference;
   onShowPage: (page: number) => void;
 }
 
@@ -283,7 +315,9 @@ function renderNodes(nodes: RebuiltNode[], context: DrawContext): ReactNode[] {
   return nodes.map((node) => {
     switch (node.kind) {
       case "page":
-        return <PageMarker key={`page-${node.page}`} page={node.page} onShowPage={context.onShowPage} />;
+        return (
+          <PageMarker key={`page-${node.page}`} page={node.page} onShowPage={context.onShowPage} />
+        );
       case "heading":
         return <Heading key={node.index} level={node.level} index={node.index} text={node.text} />;
       case "paragraph":
@@ -313,11 +347,26 @@ function renderNodes(nodes: RebuiltNode[], context: DrawContext): ReactNode[] {
       case "list":
         return <RebuiltListView key={node.index} list={node} />;
       case "contents":
-        return <Contents key={node.index} index={node.index} items={node.items.map((item) => item.text)} />;
+        return (
+          <Contents
+            key={node.index}
+            index={node.index}
+            items={node.items.map((item) => item.text)}
+          />
+        );
       case "table":
-        return <RebuiltTableView key={node.index} index={node.index} table={node.table} onShowPage={context.onShowPage} />;
+        return (
+          <RebuiltTableView
+            key={node.index}
+            index={node.index}
+            table={node.table}
+            onShowPage={context.onShowPage}
+          />
+        );
       case "figure":
-        return <FigureView key={node.index} index={node.index} figure={node.figure} context={context} />;
+        return (
+          <FigureView key={node.index} index={node.index} figure={node.figure} context={context} />
+        );
     }
   });
 }
@@ -326,7 +375,9 @@ function PageMarker({ page, onShowPage }: { page: number; onShowPage: (page: num
   const { t } = useTranslation();
   return (
     <div className={PAGE_RULE} id={`page-${page}`}>
-      <span className={`${PAGE_NUMBER} numeric`}>{t("documents.rebuilt.page", "Page {page}", { page })}</span>
+      <span className={`${PAGE_NUMBER} numeric`}>
+        {t("documents.rebuilt.page", "Page {page}", { page })}
+      </span>
       <button type="button" className={PAGE_LINK} onClick={() => onShowPage(page)}>
         {t("documents.rebuilt.openPage", "Open in the original")}
       </button>
@@ -341,7 +392,11 @@ function Heading({ level, index, text }: { level: number; index: number; text: s
   return (
     <Tag id={anchorOf(index)} className={`${HEADING} ${HEADING_SIZE[Tag]}`}>
       {text}
-      <a className={PERMALINK} href={`#${anchorOf(index)}`} aria-label={t("documents.rebuilt.linkTo", "Link to {heading}", { heading: text })}>
+      <a
+        className={PERMALINK}
+        href={`#${anchorOf(index)}`}
+        aria-label={t("documents.rebuilt.linkTo", "Link to {heading}", { heading: text })}
+      >
         #
       </a>
     </Tag>
@@ -353,7 +408,9 @@ function RebuiltListView({ list }: { list: RebuiltList }) {
   const items = list.items.map((item) => (
     <li key={item.index} id={anchorOf(item.index)}>
       {item.text}
-      {item.children?.map((child) => <RebuiltListView key={child.index} list={child} />)}
+      {item.children?.map((child) => (
+        <RebuiltListView key={child.index} list={child} />
+      ))}
     </li>
   ));
   return list.ordered ? <ol className={LIST}>{items}</ol> : <ul className={LIST}>{items}</ul>;
@@ -362,7 +419,11 @@ function RebuiltListView({ list }: { list: RebuiltList }) {
 function Contents({ index, items }: { index: number; items: string[] }) {
   const { t } = useTranslation();
   return (
-    <nav id={anchorOf(index)} className={CONTENTS} aria-label={t("documents.rebuilt.contents", "Contents")}>
+    <nav
+      id={anchorOf(index)}
+      className={CONTENTS}
+      aria-label={t("documents.rebuilt.contents", "Contents")}
+    >
       <ol>
         {items.map((item, position) => (
           <li key={position}>{item}</li>
@@ -372,9 +433,21 @@ function Contents({ index, items }: { index: number; items: string[] }) {
   );
 }
 
-function RebuiltTableView({ index, table, onShowPage }: { index: number; table: RebuiltTable; onShowPage: (page: number) => void }) {
+function RebuiltTableView({
+  index,
+  table,
+  onShowPage,
+}: {
+  index: number;
+  table: RebuiltTable;
+  onShowPage: (page: number) => void;
+}) {
   const { t } = useTranslation();
-  const columnCount = Math.max(1, table.columns.length, ...table.rows.map((row) => row.cells.reduce((sum, cell) => sum + cell.span, 0)));
+  const columnCount = Math.max(
+    1,
+    table.columns.length,
+    ...table.rows.map((row) => row.cells.reduce((sum, cell) => sum + cell.span, 0)),
+  );
   return (
     <div id={anchorOf(index)} className={TABLE_FRAME}>
       <table className={TABLE}>
@@ -405,7 +478,14 @@ function RebuiltTableView({ index, table, onShowPage }: { index: number; table: 
           {table.rows.map((row) => (
             <tr key={row.index} id={anchorOf(row.index)}>
               {row.cells.map((cell, position) => (
-                <td key={position} colSpan={cell.span === table.columns.length && table.columns.length > 0 ? columnCount : cell.span}>
+                <td
+                  key={position}
+                  colSpan={
+                    cell.span === table.columns.length && table.columns.length > 0
+                      ? columnCount
+                      : cell.span
+                  }
+                >
                   <CellContent cell={cell} />
                 </td>
               ))}
@@ -453,7 +533,11 @@ function CellContent({ cell }: { cell: RebuiltCell }) {
           return null;
         }
         return value.filledDown ? (
-          <span key={position} className={FILLED_VALUE} title={t("documents.rebuilt.filledDown", "Filled down from the merged cell above")}>
+          <span
+            key={position}
+            className={FILLED_VALUE}
+            title={t("documents.rebuilt.filledDown", "Filled down from the merged cell above")}
+          >
             {value.value}
           </span>
         ) : (
@@ -467,7 +551,15 @@ function CellContent({ cell }: { cell: RebuiltCell }) {
 }
 
 /** A figure: the image of the drawing, fetched when it scrolls near, its caption, and the labels found on it. */
-function FigureView({ index, figure, context }: { index: number; figure: Figure; context: DrawContext }) {
+function FigureView({
+  index,
+  figure,
+  context,
+}: {
+  index: number;
+  figure: Figure;
+  context: DrawContext;
+}) {
   const { t, plural } = useTranslation();
   const frame = useRef<HTMLElement>(null);
   const [address, setAddress] = useState<string | null>(null);
@@ -517,24 +609,41 @@ function FigureView({ index, figure, context }: { index: number; figure: Figure;
         URL.revokeObjectURL(created);
       }
     };
-  }, [near, figure.image, figure.number, workspaceId, documentId, generation.versionId, generation.jobId]);
+  }, [
+    near,
+    figure.image,
+    figure.number,
+    workspaceId,
+    documentId,
+    generation.versionId,
+    generation.jobId,
+  ]);
 
   const width = Math.max(1, figure.bounds.right - figure.bounds.left);
   const height = Math.max(1, figure.bounds.bottom - figure.bounds.top);
-  const caption = figure.caption ?? t("documents.rebuilt.figureOnPage", "Figure on page {page}", { page: figure.page });
+  const caption =
+    figure.caption ??
+    t("documents.rebuilt.figureOnPage", "Figure on page {page}", { page: figure.page });
   return (
     <figure ref={frame} id={anchorOf(index)} className={FIGURE}>
-      <div className={FIGURE_STAGE} style={{ aspectRatio: `${width} / ${height}`, maxWidth: `${Math.min(width * 1.4, 960)}px` }}>
+      <div
+        className={FIGURE_STAGE}
+        style={{ aspectRatio: `${width} / ${height}`, maxWidth: `${Math.min(width * 1.4, 960)}px` }}
+      >
         {address !== null ? (
           <img src={address} alt={caption} />
         ) : (
           <span className={FIGURE_PENDING}>
-            {failed || !figure.image ? t("documents.rebuilt.figureNoImage", "No image was drawn for this figure") : t("documents.rebuilt.figureLoading", "Loading the figure…")}
+            {failed || !figure.image
+              ? t("documents.rebuilt.figureNoImage", "No image was drawn for this figure")
+              : t("documents.rebuilt.figureLoading", "Loading the figure…")}
           </span>
         )}
       </div>
       <figcaption className={FIGURE_CAPTION}>
-        <span className={FIGURE_NUMBER}>{t("documents.rebuilt.figureNumber", "Figure {number}", { number: figure.number })}</span>
+        <span className={FIGURE_NUMBER}>
+          {t("documents.rebuilt.figureNumber", "Figure {number}", { number: figure.number })}
+        </span>
         <span>{caption}</span>
         <button type="button" className={PAGE_LINK} onClick={() => context.onShowPage(figure.page)}>
           {t("documents.rebuilt.pageShort", "p. {page}", { page: figure.page })}

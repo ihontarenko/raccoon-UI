@@ -1,3 +1,4 @@
+import { GraphOriginalLink } from "../indexing/GraphOriginalLink";
 import { Link } from "@tanstack/react-router";
 import { RETRIEVAL_MODES, RETRIEVAL_REASONS } from "../../application/codeLabels";
 import { formatNumber, labelOfCode, type CodeLabels } from "../../application/format";
@@ -54,14 +55,23 @@ const EXCLUSION_REASONS: CodeLabels = {
   CANDIDATE_BUDGET: declareText("codes.exclusionReason.candidateBudget", "Candidate budget"),
   FRAGMENT_BUDGET: declareText("codes.exclusionReason.fragmentBudget", "Fragment budget"),
   CHARACTER_BUDGET: declareText("codes.exclusionReason.characterBudget", "Character budget"),
-  ORIGINAL_UNAVAILABLE: declareText("codes.exclusionReason.originalUnavailable", "Original unavailable"),
+  ORIGINAL_UNAVAILABLE: declareText(
+    "codes.exclusionReason.originalUnavailable",
+    "Original unavailable",
+  ),
 };
 
-const REASON: Record<AnswerReason, { label: DeclaredText; tone: BadgeTone; explanation: DeclaredText }> = {
+const REASON: Record<
+  AnswerReason,
+  { label: DeclaredText; tone: BadgeTone; explanation: DeclaredText }
+> = {
   GENERATED: {
     label: declareText("ask.reason.generated", "Answered"),
     tone: "good",
-    explanation: declareText("ask.reason.generated.explanation", "A model wrote the answer from the sources below."),
+    explanation: declareText(
+      "ask.reason.generated.explanation",
+      "A model wrote the answer from the sources below.",
+    ),
   },
   SOURCES_ONLY: {
     label: declareText("ask.reason.sourcesOnly", "Sources only"),
@@ -112,7 +122,7 @@ export function referencesOf(answer: AnswerResponse): AnswerReferences {
   const references: AnswerReferences = new Map();
   answer.sources.forEach((source, index) => {
     const cited = answer.generated?.citedSourceIds.includes(source.id) ?? false;
-    for (const entry of source.fragment.entries) {
+    for (const entry of source.fragment?.entries ?? []) {
       references.set(entry.entryId, { number: index + 1, cited });
     }
   });
@@ -151,19 +161,41 @@ export function AnswerPanel({ answer }: { answer: AnswerResponse }) {
       {answer.sources.length > 0 && (
         <ol className={REFERENCES} aria-label={t("ask.sources", "Sources")}>
           {answer.sources.map((source, index) => {
-            const citation = source.fragment.citations[0];
+            const citation = source.fragment?.citations[0];
+            const graphEvidence = source.graphFragment?.root.evidence;
             const cited = answer.generated?.citedSourceIds.includes(source.id) ?? false;
             return (
               <li key={source.id} className={REFERENCE}>
                 <span className={REFERENCE_NUMBER} data-cited={cited}>
                   {index + 1}
                 </span>
-                <strong className="font-semibold">{source.fragment.title}</strong>
+                <strong className="font-semibold">
+                  {source.fragment?.title ?? source.graphFragment?.root.qualifiedName}
+                </strong>
                 {cited && <Badge tone="good">{t("ask.cited", "Cited")}</Badge>}
-                {source.fragment.origin !== "DERIVED" && <Badge tone="active">{source.fragment.origin.toLowerCase()}</Badge>}
+                {source.fragment !== null && source.fragment.origin !== "DERIVED" && (
+                  <Badge tone="active">{source.fragment.origin.toLowerCase()}</Badge>
+                )}
+                {source.graphFragment != null && (
+                  <Badge tone="active">
+                    {t("graph.semanticEvidence", "Semantic graph evidence")}
+                  </Badge>
+                )}
+                {graphEvidence !== undefined && <GraphOriginalLink evidence={graphEvidence} />}
                 {citation !== undefined && (
-                  <Link to="/documents/$documentId" params={{ documentId: citation.documentId }} search={{ version: citation.versionId, lines: `${citation.startLine}-${citation.endLine}` }} className={CITATION}>
-                    {t("ask.citationShort", "lines {start}–{end}", { start: citation.startLine, end: citation.endLine })}
+                  <Link
+                    to="/documents/$documentId"
+                    params={{ documentId: citation.documentId }}
+                    search={{
+                      version: citation.versionId,
+                      lines: `${citation.startLine}-${citation.endLine}`,
+                    }}
+                    className={CITATION}
+                  >
+                    {t("ask.citationShort", "lines {start}–{end}", {
+                      start: citation.startLine,
+                      end: citation.endLine,
+                    })}
                   </Link>
                 )}
               </li>
@@ -180,12 +212,19 @@ export function AnswerPanel({ answer }: { answer: AnswerResponse }) {
               <div>
                 <dt>{t("ask.search", "Search")}</dt>
                 <dd>
-                  {t("ask.searchSummary", "{mode} · {hits} · {keyword} keyword and {vector} vector candidates", {
-                    mode: labelOfCode(RETRIEVAL_MODES, answer.search.retrieval.effectiveMode),
-                    hits: plural("ask.hitCount", answer.search.hits.length, { one: "{count} hit", other: "{count} hits" }),
-                    keyword: formatNumber(answer.search.retrieval.lexicalCandidates),
-                    vector: formatNumber(answer.search.retrieval.semanticCandidates),
-                  })}
+                  {t(
+                    "ask.searchSummary",
+                    "{mode} · {hits} · {keyword} keyword and {vector} vector candidates",
+                    {
+                      mode: labelOfCode(RETRIEVAL_MODES, answer.search.retrieval.effectiveMode),
+                      hits: plural("ask.hitCount", answer.search.hits.length, {
+                        one: "{count} hit",
+                        other: "{count} hits",
+                      }),
+                      keyword: formatNumber(answer.search.retrieval.lexicalCandidates),
+                      vector: formatNumber(answer.search.retrieval.semanticCandidates),
+                    },
+                  )}
                 </dd>
               </div>
               <div>
@@ -208,13 +247,17 @@ export function AnswerPanel({ answer }: { answer: AnswerResponse }) {
                   other: "{count} characters",
                 })}
                 {answer.context.exclusions.length > 0 &&
-                  t("ask.leftOutCount", " · {count} left out", { count: formatNumber(answer.context.exclusions.length) })}
+                  t("ask.leftOutCount", " · {count} left out", {
+                    count: formatNumber(answer.context.exclusions.length),
+                  })}
               </dd>
             </div>
           )}
           <div>
             <dt>{t("ask.profile", "Profile")}</dt>
-            <dd>{t("ask.revision", "revision {revision}", { revision: answer.profileRevision })}</dd>
+            <dd>
+              {t("ask.revision", "revision {revision}", { revision: answer.profileRevision })}
+            </dd>
           </div>
           <div>
             <dt>{t("ask.answer", "Answer")}</dt>

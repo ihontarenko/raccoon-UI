@@ -19,6 +19,7 @@ export const SECTION_TITLES: CodeLabels = {
   preparation: declareText("profiles.form.section.preparation", "Preparation"),
   "preparation.chunking": declareText("profiles.form.section.preparationChunking", "Preparation · chunking"),
   "preparation.indexing": declareText("profiles.form.section.preparationIndexing", "Preparation · indexing"),
+  "preparation.relations": declareText("profiles.form.section.preparationRelations", "Preparation · relations"),
 };
 
 /**
@@ -26,6 +27,14 @@ export const SECTION_TITLES: CodeLabels = {
  * with an entry takes its label from that entry, and its "About …" button carries the explanation.
  */
 export const UNWRITTEN_PARAMETERS: Readonly<Record<string, { title: DeclaredText; hint: DeclaredText }>> = {
+  "preparation.relations.includeUnreliable": {
+    title: declareText("profiles.relations.partial.title", "Retain partial evidence"),
+    hint: declareText("profiles.relations.partial.hint", "Keep facts from recovered declarations or bodies as uncertain evidence. They never become definite usages."),
+  },
+  "preparation.relations.includeReadingOnly": {
+    title: declareText("profiles.relations.reading.title", "Admit reading-only spans to the graph"),
+    hint: declareText("profiles.relations.reading.hint", "Explicitly allow graph evidence from bodies or documentation excluded from text indexing. Dropped or rewritten content remains excluded."),
+  },
   "recognition.parts": {
     title: declareText("profiles.form.parameter.recognitionParts.title", "Part numbers"),
     hint: declareText(

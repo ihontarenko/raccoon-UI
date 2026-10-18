@@ -4,6 +4,7 @@
 
 import { api, pageQuery, workspacePath, type PageRequest } from "./api";
 import type { DocumentCitation, RerankReason, SearchResponse } from "./contracts";
+import type { GraphContextFragment, GraphContextSelection } from "./graph";
 
 export type FragmentOrigin = "DERIVED" | "MANUAL" | "OVERRIDE";
 
@@ -39,11 +40,19 @@ export interface ContextResponse {
   profileRevision: number;
   effective: Record<string, number | boolean>;
   fragments: Fragment[];
+  graphFragments: GraphContextFragment[];
+  graphExclusions: { definitionId: string; reason: string }[];
   exclusions: { entryId: string; reason: ExclusionReason }[];
   returnedCodePoints: number;
 }
 
-export type AnswerReason = "GENERATED" | "SOURCES_ONLY" | "NO_MATCHES" | "NO_CONTEXT" | "CHAT_UNAVAILABLE" | "CALLS_DISABLED";
+export type AnswerReason =
+  | "GENERATED"
+  | "SOURCES_ONLY"
+  | "NO_MATCHES"
+  | "NO_CONTEXT"
+  | "CHAT_UNAVAILABLE"
+  | "CALLS_DISABLED";
 
 export interface AnswerResponse {
   answerId: string;
@@ -51,11 +60,21 @@ export interface AnswerResponse {
   profileRevision: number;
   reason: AnswerReason;
   generated: { text: string; citedSourceIds: string[] } | null;
-  sources: { id: string; fragment: Fragment }[];
+  sources: {
+    id: string;
+    fragment: Fragment | null;
+    graphFragment: GraphContextFragment | null;
+    label?: string | null;
+  }[];
   search: SearchResponse | null;
   context: ContextResponse | null;
   effective: Record<string, number>;
-  usage: { calls: number; inputTokens: number | null; outputTokens: number | null; unknown: boolean };
+  usage: {
+    calls: number;
+    inputTokens: number | null;
+    outputTokens: number | null;
+    unknown: boolean;
+  };
 }
 
 export interface AnswerRequest {
@@ -63,6 +82,7 @@ export interface AnswerRequest {
   question: string;
   sourceId?: string | null;
   limit?: number | null;
+  graph?: GraphContextSelection | null;
 }
 
 export interface HookExecution {
@@ -145,7 +165,10 @@ export interface RetrievalReportRow {
   profileId: string;
   profileRevision: number;
   actorId: string;
-  retrieval: SearchResponse["retrieval"] & { estimatedTokens?: number | null; model?: string | null };
+  retrieval: SearchResponse["retrieval"] & {
+    estimatedTokens?: number | null;
+    model?: string | null;
+  };
   createdAt: string;
 }
 
@@ -171,26 +194,52 @@ export interface RetrievalStatistics {
 }
 
 /** The journals, each named by the path segment the backend serves it under. */
-export type JournalKind = "search-events" | "context-events" | "answer-events" | "original-read-events";
+export type JournalKind =
+  "search-events" | "context-events" | "answer-events" | "original-read-events";
 
 export const answersApi = {
   availableAnswerProfiles: (workspaceId: string, page: PageRequest) =>
-    api.send<{ id: string; name: string }[]>("GET", workspacePath(workspaceId, `/answer-profiles/available?${pageQuery(page)}`)),
-  answer: (workspaceId: string, request: AnswerRequest) => api.send<AnswerResponse>("POST", workspacePath(workspaceId, "/answers"), request),
+    api.send<{ id: string; name: string }[]>(
+      "GET",
+      workspacePath(workspaceId, `/answer-profiles/available?${pageQuery(page)}`),
+    ),
+  answer: (workspaceId: string, request: AnswerRequest) =>
+    api.send<AnswerResponse>("POST", workspacePath(workspaceId, "/answers"), request),
 
-  journal: (workspaceId: string, kind: JournalKind, page: PageRequest) => api.send<JournalEvent[]>("GET", workspacePath(workspaceId, `/${kind}?${pageQuery(page)}`)),
-  answerCalls: (workspaceId: string, page: PageRequest) => api.send<AnswerCall[]>("GET", workspacePath(workspaceId, `/answer-calls?${pageQuery(page)}`)),
+  journal: (workspaceId: string, kind: JournalKind, page: PageRequest) =>
+    api.send<JournalEvent[]>("GET", workspacePath(workspaceId, `/${kind}?${pageQuery(page)}`)),
+  answerCalls: (workspaceId: string, page: PageRequest) =>
+    api.send<AnswerCall[]>("GET", workspacePath(workspaceId, `/answer-calls?${pageQuery(page)}`)),
   acknowledgeAnswerCall: (workspaceId: string, callId: string) =>
     api.send<void>("POST", workspacePath(workspaceId, `/answer-calls/${callId}/acknowledgement`)),
 
-  retrievalStatistics: (workspaceId: string) => api.send<RetrievalStatistics>("GET", workspacePath(workspaceId, "/retrieval/statistics")),
+  retrievalStatistics: (workspaceId: string) =>
+    api.send<RetrievalStatistics>("GET", workspacePath(workspaceId, "/retrieval/statistics")),
   retrievalReports: (workspaceId: string, page: PageRequest) =>
-    api.send<RetrievalReportRow[]>("GET", workspacePath(workspaceId, `/retrieval/reports?${pageQuery(page)}`)),
-  queryCalls: (workspaceId: string, page: PageRequest) => api.send<QueryEmbeddingCall[]>("GET", workspacePath(workspaceId, `/retrieval/calls?${pageQuery(page)}`)),
-  rerankCalls: (workspaceId: string, page: PageRequest) => api.send<RerankCall[]>("GET", workspacePath(workspaceId, `/retrieval/rerank-calls?${pageQuery(page)}`)),
+    api.send<RetrievalReportRow[]>(
+      "GET",
+      workspacePath(workspaceId, `/retrieval/reports?${pageQuery(page)}`),
+    ),
+  queryCalls: (workspaceId: string, page: PageRequest) =>
+    api.send<QueryEmbeddingCall[]>(
+      "GET",
+      workspacePath(workspaceId, `/retrieval/calls?${pageQuery(page)}`),
+    ),
+  rerankCalls: (workspaceId: string, page: PageRequest) =>
+    api.send<RerankCall[]>(
+      "GET",
+      workspacePath(workspaceId, `/retrieval/rerank-calls?${pageQuery(page)}`),
+    ),
   acknowledgeQueryCall: (workspaceId: string, callId: string) =>
     api.send<void>("POST", workspacePath(workspaceId, `/retrieval/calls/${callId}/acknowledge`)),
-  queryCache: (workspaceId: string, page: PageRequest) => api.send<QueryCacheEntry[]>("GET", workspacePath(workspaceId, `/retrieval/cache?${pageQuery(page)}`)),
+  queryCache: (workspaceId: string, page: PageRequest) =>
+    api.send<QueryCacheEntry[]>(
+      "GET",
+      workspacePath(workspaceId, `/retrieval/cache?${pageQuery(page)}`),
+    ),
   clearQueryCache: (workspaceId: string, expiredOnly: boolean) =>
-    api.send<number>("DELETE", workspacePath(workspaceId, `/retrieval/cache?expiredOnly=${expiredOnly}`)),
+    api.send<number>(
+      "DELETE",
+      workspacePath(workspaceId, `/retrieval/cache?expiredOnly=${expiredOnly}`),
+    ),
 };

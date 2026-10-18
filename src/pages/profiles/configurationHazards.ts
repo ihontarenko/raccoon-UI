@@ -636,13 +636,23 @@ function processingHazards(
     });
   }
   const steps = valueAt(configuration, "preparation.steps");
+  if (Array.isArray(steps) && steps.includes("relations")) {
+    if (!steps.includes("parse")) {
+      hazards.push({ path: "preparation.steps", tone: "warn", text: translate("profiles.hazards.relationsReuse",
+        "This profile requires an explicit earlier parse of the same version with compatible semantic facts. Old parses may need reprocessing.") });
+    }
+    if (steps.includes("chunk") && steps.indexOf("relations") < steps.indexOf("chunk")) {
+      hazards.push({ path: "preparation.steps", tone: "deny", text: translate("profiles.hazards.relationsOrder",
+        "Place relations after chunking so content exclusions also apply to graph evidence.") });
+    }
+  }
   if (Array.isArray(steps) && steps.length > 0 && !steps.includes("lexical")) {
     hazards.push({
       path: "preparation.steps",
       tone: "warn",
       text: translate(
         "profiles.hazards.noLexicalStep",
-        "Without the lexical step nothing is indexed — processed documents are not searchable.",
+        "Without the lexical step no keyword entries are published. Relations remain available to a separately built graph.",
       ),
     });
   }

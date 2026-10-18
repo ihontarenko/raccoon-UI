@@ -19,7 +19,7 @@ import {
 
 /** Sections that may be null; the editor offers to switch them on and off. */
 export const OPTIONAL_SECTIONS: Record<ProfileKind, string[]> = {
-  processing: ["preparation.chunking", "preparation.indexing"],
+  processing: ["preparation.chunking", "preparation.indexing", "preparation.relations"],
   embedding: [],
   search: ["retrieval.semantic", "retrieval.fusion", "retrieval.rerank"],
   read: [],
@@ -51,6 +51,9 @@ export function requiredSections(
         : []),
       ...(steps.includes("lexical")
         ? [{ section: "preparation.indexing", because: translate("profiles.rules.lexicalStepOn", "the lexical step is on") }]
+        : []),
+      ...(steps.includes("relations")
+        ? [{ section: "preparation.relations", because: translate("profiles.rules.relationsStepOn", "the relations step is on") }]
         : []),
     ];
   }

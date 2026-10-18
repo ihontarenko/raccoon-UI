@@ -4,7 +4,12 @@ import { PERMISSIONS } from "../../../access/permissions";
 import { formatNumber } from "../../../application/format";
 import { describeProblem } from "../../../application/problems";
 import { usePagedList } from "../../../application/usePagedList";
-import { indexOverviewApi, reachOf, type ChunkCoverage, type ChunkReach } from "../../../lib/indexOverview";
+import {
+  indexOverviewApi,
+  reachOf,
+  type ChunkCoverage,
+  type ChunkReach,
+} from "../../../lib/indexOverview";
 import {
   pipelineApi,
   type Chunk,
@@ -12,14 +17,35 @@ import {
   type ChunkSymbol,
   type ChunkSymbolKind,
   type IndexEntry,
-  type IndexGeneration,
+  type ProcessingReference,
 } from "../../../lib/pipeline";
 import { useTranslation } from "../../../translations/TranslationProvider";
-import { ConfirmDialog, EmptyState, ListFooter, ProblemState, TabToolbar, Waiting, useToaster } from "../../../ui/components";
+import {
+  ConfirmDialog,
+  EmptyState,
+  ListFooter,
+  ProblemState,
+  TabToolbar,
+  Waiting,
+  useToaster,
+} from "../../../ui/components";
 import { Badge, Button, Select, type BadgeTone } from "../../../ui/primitives";
 import { modulePathOf, scriptSymbolLabel } from "../../../ui/components/reader/scriptDoc";
 import { EntryDialog, type EntryEditing } from "../../indexing/EntryDialog";
-import { CHUNK, CHUNKS, CHUNK_FACTS, CHUNK_FILTER, CHUNK_HEAD, CHUNK_REPLACEMENT, CHUNK_REPLACEMENT_TEXT, CHUNK_SIGNATURE, CHUNK_SYMBOL, CHUNK_SYMBOL_ID, CHUNK_TEXT, STACK } from "../documentPageClasses";
+import {
+  CHUNK,
+  CHUNKS,
+  CHUNK_FACTS,
+  CHUNK_FILTER,
+  CHUNK_HEAD,
+  CHUNK_REPLACEMENT,
+  CHUNK_REPLACEMENT_TEXT,
+  CHUNK_SIGNATURE,
+  CHUNK_SYMBOL,
+  CHUNK_SYMBOL_ID,
+  CHUNK_TEXT,
+  STACK,
+} from "../documentPageClasses";
 import { ChunkIndexingView } from "./ChunkIndexingView";
 
 type Translate = ReturnType<typeof useTranslation>["t"];
@@ -40,10 +66,17 @@ function reachBadge(reach: ChunkReach, t: Translate): { label: string; tone: Bad
   }
 }
 
-function vectorBadge(coverage: ChunkCoverage, t: Translate, plural: ReturnType<typeof useTranslation>["plural"]): { label: string; tone: BadgeTone } {
+function vectorBadge(
+  coverage: ChunkCoverage,
+  t: Translate,
+  plural: ReturnType<typeof useTranslation>["plural"],
+): { label: string; tone: BadgeTone } {
   if (coverage.searchableVectors > 0) {
     return {
-      label: plural("documents.chunks.vectors", coverage.searchableVectors, { one: "Has a vector", other: "{count} vectors" }),
+      label: plural("documents.chunks.vectors", coverage.searchableVectors, {
+        one: "Has a vector",
+        other: "{count} vectors",
+      }),
       tone: "allow",
     };
   }
@@ -81,7 +114,13 @@ function symbolHeading(symbol: ChunkSymbol): string | null {
  * signature or path as written and its symbol id — the exact tokens keyword search also matches — and, for a
  * member or an entry, what it is declared in.
  */
-function ChunkSymbolLine({ symbol, modulePath }: { symbol: ChunkSymbol; modulePath: string | null }) {
+function ChunkSymbolLine({
+  symbol,
+  modulePath,
+}: {
+  symbol: ChunkSymbol;
+  modulePath: string | null;
+}) {
   const heading = symbolHeading(symbol);
   return (
     <div className={CHUNK_SYMBOL}>
@@ -92,8 +131,12 @@ function ChunkSymbolLine({ symbol, modulePath }: { symbol: ChunkSymbol; modulePa
           part {symbol.part} of {symbol.parts}
         </span>
       )}
-      {(symbol.kind === "MEMBERS" || symbol.kind === "DECLARATIONS" || symbol.kind === "ENTRIES") && (
-        <span className="text-xs text-muted">{symbol.members.map((member) => member.name).join(", ")}</span>
+      {(symbol.kind === "MEMBERS" ||
+        symbol.kind === "DECLARATIONS" ||
+        symbol.kind === "ENTRIES") && (
+        <span className="text-xs text-muted">
+          {symbol.members.map((member) => member.name).join(", ")}
+        </span>
       )}
       {symbol.traits !== undefined && (
         <span className="text-xs text-muted">
@@ -103,9 +146,13 @@ function ChunkSymbolLine({ symbol, modulePath }: { symbol: ChunkSymbol; modulePa
         </span>
       )}
       {symbol.symbolId !== null && (
-        <span className={`text-xs text-muted ${CHUNK_SYMBOL_ID}`}>{symbol.traits !== undefined ? scriptSymbolLabel(modulePath, symbol) : symbol.symbolId}</span>
+        <span className={`text-xs text-muted ${CHUNK_SYMBOL_ID}`}>
+          {symbol.traits !== undefined ? scriptSymbolLabel(modulePath, symbol) : symbol.symbolId}
+        </span>
       )}
-      {symbol.enclosingSignature !== null && <span className="text-xs text-muted">in {symbol.enclosingSignature}</span>}
+      {symbol.enclosingSignature !== null && (
+        <span className="text-xs text-muted">in {symbol.enclosingSignature}</span>
+      )}
     </div>
   );
 }
@@ -127,7 +174,10 @@ function editingOf({ chunk, coverage }: CoveredChunk): EntryEditing | null {
     return null;
   }
   // A replacement starts from what is indexed, not from the raw slice.
-  return { mode: "replace", entry: { ...coverage.entry, text: chunk.indexedText ?? coverage.entry.text } };
+  return {
+    mode: "replace",
+    entry: { ...coverage.entry, text: chunk.indexedText ?? coverage.entry.text },
+  };
 }
 
 /**
@@ -143,7 +193,7 @@ export function ChunksTab({
   onChanged,
 }: {
   workspaceId: string;
-  generation: IndexGeneration | null;
+  generation: ProcessingReference | null;
   documentPath: string | null;
   onChanged: () => void;
 }) {
@@ -173,7 +223,10 @@ export function ChunksTab({
     return (
       <EmptyState
         title={t("documents.chunks.notYet", "Not cut into chunks yet")}
-        description={t("documents.chunks.notYetDescription", "Process this version: it is read, cut into chunks, and each chunk becomes one searchable entry.")}
+        description={t(
+          "documents.chunks.notYetDescription",
+          "Process this version: it is read, cut into chunks, and each chunk becomes one searchable entry.",
+        )}
       />
     );
   }
@@ -181,7 +234,10 @@ export function ChunksTab({
     return (
       <EmptyState
         title={t("documents.chunks.purged", "Chunks purged")}
-        description={t("documents.chunks.purgedDescription", "This generation was purged; process the version again to rebuild its chunks.")}
+        description={t(
+          "documents.chunks.purgedDescription",
+          "This generation was purged; process the version again to rebuild its chunks.",
+        )}
       />
     );
   }
@@ -192,13 +248,20 @@ export function ChunksTab({
       notify({
         tone: "good",
         title: t("documents.chunks.removed", "Removed from search"),
-        description: t("documents.chunks.removedDescription", "Vectors built from it are withdrawn."),
+        description: t(
+          "documents.chunks.removedDescription",
+          "Vectors built from it are withdrawn.",
+        ),
       });
       chunks.reload();
       onChanged();
     } catch (error) {
       const problem = describeProblem(error);
-      notify({ tone: "error", title: problem.title, description: problem.detail ?? problem.description });
+      notify({
+        tone: "error",
+        title: problem.title,
+        description: problem.detail ?? problem.description,
+      });
     }
   };
 
@@ -216,7 +279,9 @@ export function ChunksTab({
             >
               <option value="ALL">{t("documents.chunks.filterAll", "All chunks")}</option>
               <option value="EDITED">{t("documents.chunks.filterEdited", "Edited by hand")}</option>
-              <option value="REMOVED">{t("documents.chunks.filterRemoved", "Removed from search")}</option>
+              <option value="REMOVED">
+                {t("documents.chunks.filterRemoved", "Removed from search")}
+              </option>
             </Select>
           </label>
         }
@@ -227,7 +292,9 @@ export function ChunksTab({
         )}
       </TabToolbar>
 
-      {chunks.status === "loading" && <Waiting label={t("documents.chunks.loading", "Loading chunks")} lines={4} />}
+      {chunks.status === "loading" && (
+        <Waiting label={t("documents.chunks.loading", "Loading chunks")} lines={4} />
+      )}
       {chunks.status === "failed" && (
         <ProblemState
           layout="section"
@@ -244,12 +311,18 @@ export function ChunksTab({
           standing === "ALL" ? (
             <EmptyState
               title={t("documents.chunks.none", "No chunks")}
-              description={t("documents.chunks.noneDescription", "The processor produced no text worth indexing from this version.")}
+              description={t(
+                "documents.chunks.noneDescription",
+                "The processor produced no text worth indexing from this version.",
+              )}
             />
           ) : (
             <EmptyState
               title={t("documents.chunks.noneByHand", "Nothing here was changed by hand")}
-              description={t("documents.chunks.noneByHandDescription", "No chunk of this version was edited or removed from search.")}
+              description={t(
+                "documents.chunks.noneByHandDescription",
+                "No chunk of this version was edited or removed from search.",
+              )}
             />
           )
         ) : (
@@ -266,7 +339,9 @@ export function ChunksTab({
                   <li key={chunk.number} className={CHUNK}>
                     <div className={CHUNK_HEAD}>
                       <span className="numeric">
-                        <strong>{t("documents.chunks.number", "Chunk {number}", { number: chunk.number })}</strong>
+                        <strong>
+                          {t("documents.chunks.number", "Chunk {number}", { number: chunk.number })}
+                        </strong>
                       </span>
                       <span className="text-xs text-muted numeric">
                         {chunk.startPage !== null &&
@@ -274,12 +349,16 @@ export function ChunksTab({
                           (chunk.startPage === chunk.endPage
                             ? `${t("documents.chunks.page", "page {page}", { page: chunk.startPage })} · `
                             : `${t("documents.chunks.pages", "pages {start}–{end}", { start: chunk.startPage, end: chunk.endPage })} · `)}
-                        {t("documents.chunks.coordinates", "lines {start}–{end} · characters {from}–{to}", {
-                          start: chunk.startLine,
-                          end: chunk.endLine,
-                          from: formatNumber(chunk.startOffset),
-                          to: formatNumber(chunk.endOffset),
-                        })}
+                        {t(
+                          "documents.chunks.coordinates",
+                          "lines {start}–{end} · characters {from}–{to}",
+                          {
+                            start: chunk.startLine,
+                            end: chunk.endLine,
+                            from: formatNumber(chunk.startOffset),
+                            to: formatNumber(chunk.endOffset),
+                          },
+                        )}
                       </span>
                       <span className={CHUNK_FACTS}>
                         {reach !== null && <Badge tone={reach.tone}>{reach.label}</Badge>}
@@ -298,7 +377,11 @@ export function ChunksTab({
                             <Button
                               variant="quiet"
                               icon="trash"
-                              aria-label={t("documents.chunks.removeNamed", "Remove chunk {number} from the index", { number: chunk.number })}
+                              aria-label={t(
+                                "documents.chunks.removeNamed",
+                                "Remove chunk {number} from the index",
+                                { number: chunk.number },
+                              )}
                               onClick={() => {
                                 setRemoving({ entry, chunkNumber: chunk.number });
                               }}
@@ -309,10 +392,14 @@ export function ChunksTab({
                         )}
                       </span>
                     </div>
-                    {chunk.symbol !== null && <ChunkSymbolLine symbol={chunk.symbol} modulePath={modulePath} />}
+                    {chunk.symbol !== null && (
+                      <ChunkSymbolLine symbol={chunk.symbol} modulePath={modulePath} />
+                    )}
                     {coverage?.replacement != null && (
                       <div className={CHUNK_REPLACEMENT}>
-                        <span className="text-xs text-secondary">{t("documents.chunks.replacedBy", "Indexed instead, as written by hand")}</span>
+                        <span className="text-xs text-secondary">
+                          {t("documents.chunks.replacedBy", "Indexed instead, as written by hand")}
+                        </span>
                         <p className={CHUNK_REPLACEMENT_TEXT}>{coverage.replacement.text}</p>
                       </div>
                     )}
@@ -323,7 +410,10 @@ export function ChunksTab({
             </ol>
             <ListFooter
               shown={chunks.items.length}
-              counted={plural("documents.chunks.count", chunks.items.length, { one: "{count} chunk", other: "{count} chunks" })}
+              counted={plural("documents.chunks.count", chunks.items.length, {
+                one: "{count} chunk",
+                other: "{count} chunks",
+              })}
               hasMore={chunks.hasMore}
               loadingMore={chunks.loadingMore}
               moreProblem={chunks.moreProblem}

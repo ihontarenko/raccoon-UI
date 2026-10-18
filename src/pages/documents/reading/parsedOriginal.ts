@@ -1,5 +1,11 @@
 import { useResource, type Resource } from "../../../application/useResource";
-import { pipelineApi, type ContentOutcome, type IndexGeneration, type StructuredBlock, type StructuredDocument } from "../../../lib/pipeline";
+import {
+  pipelineApi,
+  type ContentOutcome,
+  type ProcessingReference,
+  type StructuredBlock,
+  type StructuredDocument,
+} from "../../../lib/pipeline";
 
 /** A published parse and what the content pipeline dropped from it. */
 export interface ParsedOriginal {
@@ -8,7 +14,11 @@ export interface ParsedOriginal {
 }
 
 /** Loads the parse a processing run published, with its content outcome. */
-export function useParsedOriginal(workspaceId: string, documentId: string, generation: IndexGeneration): Resource<ParsedOriginal> {
+export function useParsedOriginal(
+  workspaceId: string,
+  documentId: string,
+  generation: ProcessingReference,
+): Resource<ParsedOriginal> {
   return useResource(async () => {
     const [document, outcome] = await Promise.all([
       pipelineApi.processingResult(workspaceId, documentId, generation.versionId, generation.jobId),

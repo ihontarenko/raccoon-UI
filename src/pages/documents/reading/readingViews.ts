@@ -9,7 +9,7 @@
 import type { ComponentType } from "react";
 import type { DocumentReadingView } from "../../../application/routeTabs";
 import { declareText, translateDeclared, type DeclaredText } from "../../../translations/translate";
-import type { IndexGeneration } from "../../../lib/pipeline";
+import type { ProcessingReference } from "../../../lib/pipeline";
 import type { LineRange, ReadingFormat } from "../../../ui/components/reader/readingFormat";
 
 /** What a view's surface is given: where the original is, the run whose parse it reads, and how to go back to the original. */
@@ -19,7 +19,7 @@ export interface ReadingViewProperties {
   versionId: string;
   format: ReadingFormat;
   /** The processing run whose parse the view is built from — never purged, never absent when a surface is drawn. */
-  generation: IndexGeneration;
+  generation: ProcessingReference;
   /** The original's text when it was read whole; null for a binary original or one shown in part. */
   sourceText: string | null;
   /** The document's path in its source, for a title. */

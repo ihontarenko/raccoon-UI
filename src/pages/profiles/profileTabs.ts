@@ -44,6 +44,7 @@ const SETTINGS_TABS: Record<ProfileKind, SettingsTab[]> = {
     settingsTab("indexing", declareText("profiles.tab.indexing", "Indexing"), [
       "preparation.indexing",
     ]),
+    settingsTab("relations", declareText("profiles.tab.relations", "Relations"), ["preparation.relations"]),
   ],
   search: [
     GENERAL,

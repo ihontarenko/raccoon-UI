@@ -11,7 +11,14 @@ import type { RulePreview } from "./sourceContracts";
 
 /** Where a rule runs, named by what it sees. */
 export type RuleStage =
-  "MATERIAL" | "BLOCKS" | "CHUNKS" | "KEYWORD_TEXT" | "EMBEDDING_TEXT" | "QUERY";
+  | "MATERIAL"
+  | "BLOCKS"
+  | "CHUNKS"
+  | "KEYWORD_TEXT"
+  | "EMBEDDING_TEXT"
+  | "QUERY"
+  | "SEMANTIC_EXTRACTION"
+  | "RELATIONS";
 
 /** The stages in the order a document meets them. */
 export const RULE_STAGES: RuleStage[] = [
@@ -21,6 +28,8 @@ export const RULE_STAGES: RuleStage[] = [
   "KEYWORD_TEXT",
   "EMBEDDING_TEXT",
   "QUERY",
+  "SEMANTIC_EXTRACTION",
+  "RELATIONS",
 ];
 
 /** What binds a rule set for its rules at a stage to run. */
@@ -38,7 +47,13 @@ export type RuleFact =
   | "PAGE"
   | "HEADING_LEVEL"
   | "POSITION"
-  | "REPETITION";
+  | "REPETITION"
+  | "SEMANTIC_PROVIDER"
+  | "ENTITY_KIND"
+  | "RELATION_ROLE"
+  | "FACT_ORIGIN"
+  | "TARGET_NAMESPACE"
+  | "TARGET_KEY";
 
 export const NUMERIC_FACTS: RuleFact[] = [
   "SIZE_BYTES",
@@ -78,7 +93,9 @@ export type RuleAction =
   | { type: "REVIEW" }
   | { type: "NORMALISE"; normalisations: Normalisation[] }
   | { type: "REPLACE"; patterns: string[]; replacement: string }
-  | { type: "REMOVE_WORDS"; words: string[] };
+  | { type: "REMOVE_WORDS"; words: string[] }
+  | { type: "DEFINE_ENTITY"; namespace: string; key: string; name: string; kind: string }
+  | { type: "LINK_ENTITY"; role: string; namespace: string; key: string };
 
 export type ActionType = RuleAction["type"];
 
@@ -240,7 +257,10 @@ export const ruleSetsApi = {
       configuration,
     }),
   history: (workspaceId: string, ruleSetId: string) =>
-    api.send<RuleSetRevision[]>("GET", workspacePath(workspaceId, `/rule-sets/${ruleSetId}/history`)),
+    api.send<RuleSetRevision[]>(
+      "GET",
+      workspacePath(workspaceId, `/rule-sets/${ruleSetId}/history`),
+    ),
   dropped: (workspaceId: string, ruleSetId: string) =>
     api.send<RuleDrop[]>("GET", workspacePath(workspaceId, `/rule-sets/${ruleSetId}/dropped`)),
   sourceBinding: (workspaceId: string, sourceId: string) =>
@@ -309,6 +329,9 @@ export function actionAllowedAt(type: ActionType, stage: StageView): boolean {
       return stage.decides;
     case "REVIEW":
       return stage.stage === "MATERIAL";
+    case "DEFINE_ENTITY":
+    case "LINK_ENTITY":
+      return stage.stage === "SEMANTIC_EXTRACTION";
     case "REMOVE_WORDS":
       return stage.stage === "KEYWORD_TEXT";
     default:
@@ -389,6 +412,10 @@ export function newAction(type: ActionType): RuleAction {
       return { type, patterns: ["\\s*\\[\\d+\\]"], replacement: "" };
     case "REMOVE_WORDS":
       return { type, words: ["the"] };
+    case "DEFINE_ENTITY":
+      return { type, namespace: "topic", key: "example", name: "Example", kind: "TOPIC" };
+    case "LINK_ENTITY":
+      return { type, role: "MENTIONS", namespace: "topic", key: "example" };
   }
 }
 
@@ -397,7 +424,12 @@ export function newAction(type: ActionType): RuleAction {
  * commonest rule anybody writes — and where it cannot, it normalises whitespace.
  */
 export function newRule(stage: StageView, order: number): Rule {
-  const action: RuleAction = stage.decides ? { type: "DROP" } : newAction("NORMALISE");
+  const action: RuleAction =
+    stage.stage === "SEMANTIC_EXTRACTION"
+      ? newAction("DEFINE_ENTITY")
+      : stage.decides
+        ? { type: "DROP" }
+        : newAction("NORMALISE");
   const condition: RuleCondition =
     stage.decides && stage.facts.includes("TEXT")
       ? newCondition("CONTAINS_WORDS", stage)

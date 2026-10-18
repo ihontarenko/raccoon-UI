@@ -17,6 +17,7 @@ import { EntriesAdministrationTab } from "./EntriesAdministrationTab";
 import { IndexChain } from "./IndexChain";
 import { IndexedDocumentsTab } from "./IndexedDocumentsTab";
 import { KeywordGenerationsTab } from "./KeywordGenerationsTab";
+import { SemanticGraphTab } from "./SemanticGraphTab";
 import { PreflightsTab } from "./PreflightsTab";
 import { VectorGenerationsTab } from "./VectorGenerationsTab";
 import { PAGE, TAB_LEAD_LINE, TOTALS } from "./indexingClasses";
@@ -24,6 +25,10 @@ import { useAddressChange } from "../../application/useAddressChange";
 
 /** What each tab is for, in one line — said under the tab strip, so a tab is never just a name. */
 const TAB_LEAD: Record<IndexTab, DeclaredText> = {
+  graph: declareText(
+    "graph.lead",
+    "Entity definitions and their usages in an explicit source context. Each result opens the exact original version.",
+  ),
   documents: declareText(
     "index.lead.documents",
     "Every document and how far it got. Open one to see its chunks, its entries and its vectors side by side.",
@@ -44,7 +49,10 @@ const TAB_LEAD: Record<IndexTab, DeclaredText> = {
     "index.lead.preflights",
     "What vectorising would cost — tokens and money — worked out before any model is called.",
   ),
-  journal: declareText("index.lead.journal", "Every step of every forecast and vectorisation, with the scripts that ran on it."),
+  journal: declareText(
+    "index.lead.journal",
+    "Every step of every forecast and vectorisation, with the scripts that ran on it.",
+  ),
 };
 
 /**
@@ -63,12 +71,24 @@ export function IndexPage() {
 
   const chain = useResource(() => indexOverviewApi.chain(workspaceId), [workspaceId]);
   const statistics = useResource(
-    () => Promise.all([pipelineApi.indexStatistics(workspaceId), pipelineApi.vectorStatistics(workspaceId)]),
+    () =>
+      Promise.all([
+        pipelineApi.indexStatistics(workspaceId),
+        pipelineApi.vectorStatistics(workspaceId),
+      ]),
     [workspaceId],
   );
-  const documents = useResource(() => collectAllPages((page) => api.listDocuments(workspaceId, page)), [workspaceId]);
+  const documents = useResource(
+    () => collectAllPages((page) => api.listDocuments(workspaceId, page)),
+    [workspaceId],
+  );
   const titles = useMemo(
-    () => new Map(documents.status === "ready" ? documents.data.map((document) => [document.id, document.title]) : []),
+    () =>
+      new Map(
+        documents.status === "ready"
+          ? documents.data.map((document) => [document.id, document.title])
+          : [],
+      ),
     [documents],
   );
 
@@ -78,7 +98,10 @@ export function IndexPage() {
   };
 
   const select = (next: IndexTab, vector?: string) => {
-    void changeAddress({ to: "/index", search: { tab: next === "documents" ? undefined : next, vector } });
+    void changeAddress({
+      to: "/index",
+      search: { tab: next === "documents" ? undefined : next, vector },
+    });
   };
 
   return (
@@ -97,17 +120,31 @@ export function IndexPage() {
         <IndexChain chain={chain.status === "ready" ? chain.data : null} />
 
         <details className={TOTALS}>
-          <summary>{t("index.totals.summary", "Every count, including what search does not read")}</summary>
+          <summary>
+            {t("index.totals.summary", "Every count, including what search does not read")}
+          </summary>
           <Statistics
             label={t("index.totals", "Totals")}
             loading={statistics.status !== "ready"}
             items={
               statistics.status === "ready"
                 ? [
-                    { label: t("index.totals.runs", "Processing runs"), value: formatNumber(statistics.data[0].generations) },
-                    { label: t("index.totals.chunks", "Chunks, all runs"), value: formatNumber(statistics.data[0].chunks) },
-                    { label: t("index.totals.entries", "Entries, all runs"), value: formatNumber(statistics.data[0].entries) },
-                    { label: t("index.totals.removed", "Out of search"), value: formatNumber(statistics.data[0].removedEntries) },
+                    {
+                      label: t("index.totals.runs", "Processing runs"),
+                      value: formatNumber(statistics.data[0].generations),
+                    },
+                    {
+                      label: t("index.totals.chunks", "Chunks, all runs"),
+                      value: formatNumber(statistics.data[0].chunks),
+                    },
+                    {
+                      label: t("index.totals.entries", "Entries, all runs"),
+                      value: formatNumber(statistics.data[0].entries),
+                    },
+                    {
+                      label: t("index.totals.removed", "Out of search"),
+                      value: formatNumber(statistics.data[0].removedEntries),
+                    },
                     {
                       label: t("index.totals.text", "Indexed text"),
                       value: t("index.totals.characters", "{count} characters", {
@@ -121,7 +158,10 @@ export function IndexPage() {
                         total: formatNumber(statistics.data[1].generations),
                       }),
                     },
-                    { label: t("index.totals.vectors", "Vectors, all generations"), value: formatNumber(statistics.data[1].records) },
+                    {
+                      label: t("index.totals.vectors", "Vectors, all generations"),
+                      value: formatNumber(statistics.data[1].records),
+                    },
                     {
                       label: t("index.totals.calls", "Model calls"),
                       value:
@@ -135,7 +175,9 @@ export function IndexPage() {
                     },
                     {
                       label: t("index.totals.storage", "Vector storage"),
-                      value: formatBytes(statistics.data[1].cachedVectorBytes + statistics.data[1].manualVectorBytes),
+                      value: formatBytes(
+                        statistics.data[1].cachedVectorBytes + statistics.data[1].manualVectorBytes,
+                      ),
                     },
                   ]
                 : []
@@ -157,13 +199,28 @@ export function IndexPage() {
               { key: "vectors", label: t("index.totals.vectorGenerations", "Vector generations") },
               { key: "preflights", label: t("index.tab.preflights", "Cost forecasts") },
               { key: "journal", label: t("index.tab.journal", "Embedding journal") },
+              { key: "graph", label: t("graph.tab", "Semantic graph") },
             ]}
           />
           <TabPanel tabKey={tab}>
             <p className={TAB_LEAD_LINE}>{say(TAB_LEAD[tab])}</p>
-            {tab === "documents" && <IndexedDocumentsTab workspaceId={workspaceId} onChanged={refresh} />}
-            {tab === "entries" && <EntriesAdministrationTab workspaceId={workspaceId} titles={titles} onChanged={refresh} />}
-            {tab === "history" && <KeywordGenerationsTab workspaceId={workspaceId} titles={titles} onChanged={refresh} />}
+            {tab === "documents" && (
+              <IndexedDocumentsTab workspaceId={workspaceId} onChanged={refresh} />
+            )}
+            {tab === "entries" && (
+              <EntriesAdministrationTab
+                workspaceId={workspaceId}
+                titles={titles}
+                onChanged={refresh}
+              />
+            )}
+            {tab === "history" && (
+              <KeywordGenerationsTab
+                workspaceId={workspaceId}
+                titles={titles}
+                onChanged={refresh}
+              />
+            )}
             {tab === "vectors" && (
               <VectorGenerationsTab
                 workspaceId={workspaceId}
@@ -177,6 +234,9 @@ export function IndexPage() {
             )}
             {tab === "preflights" && <PreflightsTab workspaceId={workspaceId} />}
             {tab === "journal" && <EmbeddingJournalTab workspaceId={workspaceId} />}
+            {tab === "graph" && (
+              <SemanticGraphTab key={workspaceId} workspaceId={workspaceId} titles={titles} />
+            )}
           </TabPanel>
         </div>
       </div>
