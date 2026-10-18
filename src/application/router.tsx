@@ -245,6 +245,15 @@ const workspaceJobsRoute = createRoute({
   ),
 });
 
+const workspaceJobRoute = createRoute({
+  getParentRoute: () => shellRoute,
+  path: "/jobs/$jobId",
+  validateSearch: (search: Record<string, unknown>): { workspace?: string } => ({
+    workspace: typeof search.workspace === "string" ? search.workspace : undefined,
+  }),
+  component: lazyRouteComponent(() => import("../pages/jobs/WorkspaceJobPage"), "WorkspaceJobPage"),
+});
+
 const indexRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/index",
@@ -385,6 +394,7 @@ const routeTree = rootRoute.addChildren([
     documentProcessingRoute,
     indexRoute,
     workspaceJobsRoute,
+    workspaceJobRoute,
     parsersRoute,
     pipelineRoute,
     chunkingRoute,

@@ -13,6 +13,7 @@ export const JOB_STATUSES: CodeLabels = {
 };
 
 export const JOB_KINDS: CodeLabels = {
+  GRAPH_INDEX: declareText("jobs.kind.graphIndex", "Relation graph"),
   STORAGE_VERIFICATION: declareText("jobs.kind.storageVerification", "Storage verification"),
   LOCAL_FOLDER_IMPORT: declareText("jobs.kind.localFolderImport", "Local folder import"),
   DOCUMENT_PARSE: declareText("jobs.kind.documentParse", "Document parse"),
@@ -31,18 +32,29 @@ export const JOB_ATTEMPT_OUTCOMES: CodeLabels = {
 
 /** Why a job failed: its kind's own failure, a policy refusal, or a worker that stopped answering. */
 export const JOB_FAILURES: CodeLabels = {
-  STORAGE_VERIFICATION_FAILED: declareText("jobs.failure.storageVerification", "Storage verification failed"),
-  LOCAL_FOLDER_IMPORT_FAILED: declareText("jobs.failure.localFolderImport", "Local folder import failed"),
+  GRAPH_INDEX_FAILED: declareText("jobs.failure.graphIndex", "Relation graph failed"),
+  STORAGE_VERIFICATION_FAILED: declareText(
+    "jobs.failure.storageVerification",
+    "Storage verification failed",
+  ),
+  LOCAL_FOLDER_IMPORT_FAILED: declareText(
+    "jobs.failure.localFolderImport",
+    "Local folder import failed",
+  ),
   DOCUMENT_PARSE_FAILED: declareText("jobs.failure.documentParse", "Document parse failed"),
   VECTOR_INDEX_FAILED: declareText("jobs.failure.vectorIndex", "Vector index failed"),
   "scan-source_FAILED": declareText("jobs.failure.scanSource", "Scheduled scan failed"),
-  "vectorise-waiting_FAILED": declareText("jobs.failure.vectoriseWaiting", "Scheduled vectorisation failed"),
+  "vectorise-waiting_FAILED": declareText(
+    "jobs.failure.vectoriseWaiting",
+    "Scheduled vectorisation failed",
+  ),
   JOB_POLICY_REFUSED: declareText("jobs.failure.policyRefused", "Refused by the job's policy"),
   LEASE_EXPIRED: declareText("jobs.failure.leaseExpired", "The worker's lease expired"),
 };
 
 /** The three kinds of work a workspace's list reads as one, from `jobs/WorkspaceJobs.Work`. */
 export const JOB_WORK: CodeLabels = {
+  GRAPH: declareText("jobs.work.graph", "Relation graph"),
   SCAN: declareText("jobs.work.scan", "Scan"),
   PROCESSING: declareText("jobs.work.processing", "Processing"),
   VECTORS: declareText("jobs.work.vectors", "Vectors"),

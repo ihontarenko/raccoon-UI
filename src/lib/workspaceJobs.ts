@@ -3,9 +3,9 @@
 // administration's (`api.listJobs`).
 
 import { api, pageQuery, workspacePath, type PageRequest } from "./api";
-import type { JobStatus } from "./contracts";
+import type { JobStatus, JobAttemptView } from "./contracts";
 
-export type WorkspaceWork = "SCAN" | "PROCESSING" | "VECTORS";
+export type WorkspaceWork = "SCAN" | "PROCESSING" | "VECTORS" | "GRAPH";
 export type WorkspaceJobFilter = "ALL" | "UNFINISHED" | "FAILED";
 
 export interface WorkspaceJob {
@@ -36,12 +36,40 @@ export interface WorkspaceJob {
 const base = (workspaceId: string) => workspacePath(workspaceId, "/jobs");
 
 export const workspaceJobsApi = {
+  detail: (workspaceId: string, jobId: string) =>
+    api.send<WorkspaceJobDetail>("GET", `${base(workspaceId)}/${jobId}`),
   list: (workspaceId: string, filter: WorkspaceJobFilter, page: PageRequest) =>
     api.send<WorkspaceJob[]>("GET", `${base(workspaceId)}?filter=${filter}&${pageQuery(page)}`),
-  cancel: (workspaceId: string, jobId: string) => api.send<WorkspaceJob>("POST", `${base(workspaceId)}/${jobId}/cancel`),
-  retry: (workspaceId: string, jobId: string) => api.send<WorkspaceJob>("POST", `${base(workspaceId)}/${jobId}/retry`),
-  activity: (workspaceId: string) => api.send<WorkspaceActivity>("GET", `${base(workspaceId)}/activity`),
+  cancel: (workspaceId: string, jobId: string) =>
+    api.send<WorkspaceJob>("POST", `${base(workspaceId)}/${jobId}/cancel`),
+  retry: (workspaceId: string, jobId: string) =>
+    api.send<WorkspaceJob>("POST", `${base(workspaceId)}/${jobId}/retry`),
+  activity: (workspaceId: string) =>
+    api.send<WorkspaceActivity>("GET", `${base(workspaceId)}/activity`),
 };
+
+export interface WorkspaceJobDetail {
+  job: WorkspaceJob;
+  attempts: JobAttemptView[];
+  configuration: {
+    maximumAttempts: number;
+    leaseSeconds: number;
+    retryDelaySeconds: number;
+    maximumBlobBytes: number;
+  };
+  events: {
+    createdAt: string;
+    type: string;
+    stepId: string;
+    outcome: string;
+    detail: string | null;
+    blockCount: number;
+    chunkCount: number;
+  }[];
+  earlierEventsOmitted: boolean;
+  scanItems: { number: number; path: string; outcome: string }[];
+  earlierScanItemsOmitted: boolean;
+}
 
 /** One worker as its heartbeat reports it; `runningJobs` counts across the installation and names none. */
 export interface WorkerHealth {

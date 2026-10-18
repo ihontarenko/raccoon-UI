@@ -124,13 +124,20 @@ export function JobsPanel() {
       notify({
         tone: "good",
         title: t("jobs.administration.verificationQueued", "Storage verification queued"),
-        description: t("jobs.administration.verificationQueuedDescription", "Every stored original is re-read and checked against its hash."),
+        description: t(
+          "jobs.administration.verificationQueuedDescription",
+          "Every stored original is re-read and checked against its hash.",
+        ),
       });
       jobs.reload();
       setSelectedId(job.id);
     } catch (error) {
       const problem = describeProblem(error);
-      notify({ tone: "error", title: problem.title, description: problem.detail ?? problem.description });
+      notify({
+        tone: "error",
+        title: problem.title,
+        description: problem.detail ?? problem.description,
+      });
     } finally {
       setVerifying(false);
     }
@@ -143,13 +150,23 @@ export function JobsPanel() {
           <SectionBar>
             <span className="text-xs text-secondary">
               {running
-                ? t("jobs.administration.newestFirstFollowing", "Newest first · following running jobs")
+                ? t(
+                    "jobs.administration.newestFirstFollowing",
+                    "Newest first · following running jobs",
+                  )
                 : t("jobs.administration.newestFirst", "Newest first")}
             </span>
             <div className={PANEL_ACTIONS}>
               <Can permission={PERMISSIONS.jobWrite}>
-                <Button variant="quiet" icon="shield" disabled={verifying} onClick={() => void verifyStorage()}>
-                  {verifying ? t("jobs.administration.starting", "Starting…") : t("jobs.administration.verifyStorage", "Verify storage")}
+                <Button
+                  variant="quiet"
+                  icon="shield"
+                  disabled={verifying}
+                  onClick={() => void verifyStorage()}
+                >
+                  {verifying
+                    ? t("jobs.administration.starting", "Starting…")
+                    : t("jobs.administration.verifyStorage", "Verify storage")}
                 </Button>
               </Can>
               <Button variant="quiet" icon="refresh" onClick={jobs.reload}>
@@ -183,7 +200,9 @@ export function JobsPanel() {
                     <div className="numeric text-muted">{shortIdentifier(job.id)}</div>
                   </td>
                   <td>
-                    <Badge tone={STATUS_TONE[job.status]}>{labelOfCode(JOB_STATUSES, job.status)}</Badge>
+                    <Badge tone={STATUS_TONE[job.status]}>
+                      {labelOfCode(JOB_STATUSES, job.status)}
+                    </Badge>
                   </td>
                   <td className="numeric">
                     {job.attemptCount} / {job.attemptLimit}
@@ -195,7 +214,10 @@ export function JobsPanel() {
           </Table>
           <ListFooter
             shown={jobs.items.length}
-            counted={plural("jobs.count", jobs.items.length, { one: "{count} job", other: "{count} jobs" })}
+            counted={plural("jobs.count", jobs.items.length, {
+              one: "{count} job",
+              other: "{count} jobs",
+            })}
             hasMore={jobs.hasMore}
             loadingMore={jobs.loadingMore}
             moreProblem={jobs.moreProblem}
@@ -230,7 +252,12 @@ export function JobsPanel() {
                   selected.failureCode === null ? (
                     "—"
                   ) : (
-                    <span className="numeric">{selected.failureCode}</span>
+                    <span>
+                      <span className="numeric">{selected.failureCode}</span>
+                      {selected.failureDetail && (
+                        <span className="mt-1 block text-sm">{selected.failureDetail}</span>
+                      )}
+                    </span>
                   ),
                 ],
                 [
@@ -244,16 +271,20 @@ export function JobsPanel() {
             <Facts
               rows={[
                 [t("jobs.administration.created", "Created"), formatDateTime(selected.createdAt)],
-                [t("jobs.administration.available", "Available"), formatDateTime(selected.availableAt)],
-                [t("jobs.administration.column.updated", "Updated"), formatDateTime(selected.updatedAt)],
+                [
+                  t("jobs.administration.available", "Available"),
+                  formatDateTime(selected.availableAt),
+                ],
+                [
+                  t("jobs.administration.column.updated", "Updated"),
+                  formatDateTime(selected.updatedAt),
+                ],
               ]}
             />
           </InspectorSection>
           <JobHistory key={selected.id} jobId={selected.id} />
           <InspectorSection title={t("jobs.administration.configuration", "Configuration")}>
-            <pre className={CONFIGURATION}>
-              {JSON.stringify(selected.configuration, null, 2)}
-            </pre>
+            <pre className={CONFIGURATION}>{JSON.stringify(selected.configuration, null, 2)}</pre>
           </InspectorSection>
           {(mayCancel(selected) || mayRetry(selected)) && (
             <Can permission={PERMISSIONS.jobWrite}>
@@ -312,7 +343,10 @@ export function JobsPanel() {
 /** Every attempt the worker made at one job, and the stored originals it touched. */
 function JobHistory({ jobId }: { jobId: string }) {
   const { t } = useTranslation();
-  const history = useResource(() => Promise.all([api.jobAttempts(jobId), api.jobFiles(jobId)]), [jobId]);
+  const history = useResource(
+    () => Promise.all([api.jobAttempts(jobId), api.jobFiles(jobId)]),
+    [jobId],
+  );
   if (history.status === "loading") {
     return (
       <InspectorSection title={t("jobs.administration.column.attempts", "Attempts")}>
@@ -326,9 +360,15 @@ function JobHistory({ jobId }: { jobId: string }) {
   const [attempts, files] = history.data;
   return (
     <>
-      <InspectorSection title={t("jobs.administration.attemptsCounted", "Attempts · {count}", { count: attempts.length })}>
+      <InspectorSection
+        title={t("jobs.administration.attemptsCounted", "Attempts · {count}", {
+          count: attempts.length,
+        })}
+      >
         {attempts.length === 0 ? (
-          <p className="text-xs text-muted">{t("jobs.administration.notPickedUp", "Not picked up by a worker yet.")}</p>
+          <p className="text-xs text-muted">
+            {t("jobs.administration.notPickedUp", "Not picked up by a worker yet.")}
+          </p>
         ) : (
           <ol className={ATTEMPTS}>
             {attempts.map((attempt) => (
@@ -336,11 +376,20 @@ function JobHistory({ jobId }: { jobId: string }) {
                 <span className="numeric">#{attempt.attemptNumber}</span>
                 <span className="text-xs text-secondary">
                   {formatDateTime(attempt.startedAt)} →{" "}
-                  {attempt.finishedAt === null ? t("jobs.administration.attemptRunning", "running") : formatDateTime(attempt.finishedAt)}
+                  {attempt.finishedAt === null
+                    ? t("jobs.administration.attemptRunning", "running")
+                    : formatDateTime(attempt.finishedAt)}
                 </span>
                 <span className="text-xs">
-                  {attempt.outcome === null ? "—" : labelOfCode(JOB_ATTEMPT_OUTCOMES, attempt.outcome)}
-                  {attempt.failureCode !== null && <span className="numeric"> · {attempt.failureCode}</span>}
+                  {attempt.outcome === null
+                    ? "—"
+                    : labelOfCode(JOB_ATTEMPT_OUTCOMES, attempt.outcome)}
+                  {attempt.failureCode !== null && (
+                    <span className="numeric"> · {attempt.failureCode}</span>
+                  )}
+                  {attempt.failureDetail && (
+                    <span className="mt-1 block text-sm">{attempt.failureDetail}</span>
+                  )}
                 </span>
                 <span className="numeric text-xs text-muted">{attempt.workerId}</span>
               </li>
@@ -349,12 +398,16 @@ function JobHistory({ jobId }: { jobId: string }) {
         )}
       </InspectorSection>
       {files.length > 0 && (
-        <InspectorSection title={t("jobs.administration.filesCounted", "Files · {count}", { count: files.length })}>
+        <InspectorSection
+          title={t("jobs.administration.filesCounted", "Files · {count}", { count: files.length })}
+        >
           <ul className={ATTEMPTS}>
             {files.map((file) => (
               <li key={file.id}>
                 <span>{file.displayName}</span>
-                <span className="text-xs text-secondary numeric">{formatBytes(file.sizeBytes)}</span>
+                <span className="text-xs text-secondary numeric">
+                  {formatBytes(file.sizeBytes)}
+                </span>
                 <span className="numeric text-xs text-muted" title={file.sha256}>
                   {file.backend} · {file.sha256.slice(0, 12)}
                 </span>

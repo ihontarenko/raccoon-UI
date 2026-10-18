@@ -306,7 +306,8 @@ export interface NoticeView {
   from: string;
 }
 
-export type SourceKind = "LOCAL_FOLDER" | "MANAGED_FOLDER" | "GIT" | "WEB" | "CUSTOM_TEXT" | "PUSH" | "CONNECTED";
+export type SourceKind =
+  "LOCAL_FOLDER" | "MANAGED_FOLDER" | "GIT" | "WEB" | "CUSTOM_TEXT" | "PUSH" | "CONNECTED";
 
 export interface SourceView {
   id: string;
@@ -350,9 +351,11 @@ export interface GitOptions {
 }
 
 export type GitHostingKind = "GITHUB" | "GITLAB" | "OTHER";
-export type RepositoryState = "FOUND" | "NOT_FOUND" | "FORBIDDEN" | "RATE_LIMITED" | "UNREACHABLE" | "NOT_CHECKED";
+export type RepositoryState =
+  "FOUND" | "NOT_FOUND" | "FORBIDDEN" | "RATE_LIMITED" | "UNREACHABLE" | "NOT_CHECKED";
 export type RepositoryVisibility = "PUBLIC" | "INTERNAL" | "PRIVATE";
-export type AccessTokenState = "NOT_SET" | "ACCEPTED" | "REJECTED" | "NO_READ_SCOPE" | "NOT_CHECKED" | "NOT_USED";
+export type AccessTokenState =
+  "NOT_SET" | "ACCEPTED" | "REJECTED" | "NO_READ_SCOPE" | "NOT_CHECKED" | "NOT_USED";
 
 /** What the hosting said about a git source's repository and its token when last asked. Never the token. */
 export interface RepositoryAccessCheck {
@@ -435,6 +438,7 @@ export interface JobAttemptView {
   finishedAt: string | null;
   outcome: string | null;
   failureCode: string | null;
+  failureDetail: string | null;
 }
 
 export interface ManagedOriginalView {
@@ -457,6 +461,7 @@ export interface JobView {
   attemptLimit: number;
   configuration: Record<string, unknown>;
   failureCode: string | null;
+  failureDetail: string | null;
   resultSha256: string | null;
   resultSizeBytes: number | null;
 }
@@ -550,7 +555,8 @@ export interface DocumentVersionView {
 }
 
 /** The ways a document version gets in. */
-export type CaptureChannel = "SCAN" | "UPLOAD" | "TEXT" | "PUSH_API" | "MCP" | "TELEGRAM" | "INTERNAL";
+export type CaptureChannel =
+  "SCAN" | "UPLOAD" | "TEXT" | "PUSH_API" | "MCP" | "TELEGRAM" | "INTERNAL";
 
 /** One uploader: the channel, the subject it acted as, and what tells two uploaders apart inside that channel. */
 export interface CaptureOrigin {

@@ -41,11 +41,13 @@ interface ToastInput {
   tone?: ToastTone;
   title: string;
   description?: string;
+  action?: { label: string; href: string };
 }
 
-interface Toast extends Required<Omit<ToastInput, "description">> {
+interface Toast extends Required<Omit<ToastInput, "description" | "action">> {
   id: number;
   description: string | null;
+  action?: ToastInput["action"];
 }
 
 interface ToasterValue {
@@ -106,6 +108,15 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: number)
         {toast.description !== null && (
           <p className="text-xs opacity-80 [overflow-wrap:anywhere]">{toast.description}</p>
         )}
+        {toast.action && (
+          <a
+            href={toast.action.href}
+            className="mt-2 text-xs font-semibold text-on-ink underline underline-offset-4"
+            onClick={() => onDismiss(toast.id)}
+          >
+            {toast.action.label}
+          </a>
+        )}
       </div>
       <button
         type="button"
@@ -131,13 +142,13 @@ export function ToasterProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<ToasterValue>(
     () => ({
-      notify: ({ tone = "neutral", title, description }) => {
+      notify: ({ tone = "neutral", title, description, action }) => {
         const id = nextIdentifier.current;
         nextIdentifier.current += 1;
         // At most four on screen: the oldest gives way so the stack never covers the page.
         setToasts((current) => [
           ...current.slice(-3),
-          { id, tone, title, description: description ?? null },
+          { id, tone, title, description: description ?? null, action },
         ]);
       },
     }),

@@ -1268,8 +1268,8 @@ export function UiKit() {
         name="job-track"
         title={t("uiKit.jobTrack.title", "Job track")}
         description={t(
-          "uiKit.jobTrack.description",
-          "Where a background job stands: Queued → Taken → Working → Done or Failed. Passed stops are green, the current one breathes in the accent, a queue with no worker to take it is amber, a failure is red; the word under each dot carries the state without the colour. Used in the header's activity panel and on Jobs.",
+          "uiKit.jobProgress.description",
+          "Measured job progress: completed work, the current step and worker availability. A refusal does not imply that earlier stages succeeded. Shared by the job list and job details.",
         )}
       >
         <div className="grid gap-4">
