@@ -203,10 +203,6 @@ export function LibraryPage() {
               entry={entry}
               onOpen={openDocument}
               onRead={() => changeLibraryAddress({ read: true })}
-              onShowPlace={(file) => {
-                showFolder(folderEntryId({ sourceId: file.sourceId, folder: file.folder }));
-                showOpenFiles(openIds, undefined);
-              }}
             />
           )}
         />
@@ -232,11 +228,10 @@ interface LibraryReadingProperties {
   entry: ExplorerEntry;
   onOpen: (versionId: string) => void;
   onRead: () => void;
-  onShowPlace: (file: FileEntry) => void;
 }
 
 /** A document open as a tab: Raccoon's own reader, over the file as Raccoon describes it. */
-function LibraryReading({ library, entry, onOpen, onRead, onShowPlace }: LibraryReadingProperties) {
+function LibraryReading({ library, entry, onOpen, onRead }: LibraryReadingProperties) {
   const { t } = useTranslation();
   const file = useResource(() => library.fileOf(entry.id), [library, entry.id]);
   const trees = useResource(() => library.sourceTrees(), [library]);
@@ -255,7 +250,6 @@ function LibraryReading({ library, entry, onOpen, onRead, onShowPlace }: Library
       sourceName={sourceName}
       onOpen={onOpen}
       onRead={onRead}
-      onShowPlace={() => onShowPlace(file.data)}
     />
   );
 }

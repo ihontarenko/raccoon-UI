@@ -4,7 +4,7 @@ import { formatBytes, formatDateTime } from "../../application/format";
 import { useOriginal, type LoadedOriginal } from "../../application/useOriginal";
 import { downloadFile, type FileEntry } from "../../lib/files";
 import { useTranslation } from "../../translations/TranslationProvider";
-import { defaultReadingMode, OriginalReader, type ReadingMode } from "../../ui/components/reader/Reader";
+import { defaultReadingMode, OriginalReader, type ReaderPresentation, type ReadingMode } from "../../ui/components/reader/Reader";
 import { countLines, readingFormatOf, type LineRange, type ReadingFormat } from "../../ui/components/reader/readingFormat";
 import { Badge, Button } from "../../ui/primitives";
 import { FileMark } from "./FileMarks";
@@ -176,10 +176,12 @@ interface StageProperties {
   onDownload: () => void;
   /** Lines to bring into view and mark — an outline entry chosen beside the reader. */
   focus?: LineRange | null;
+  /** `open` where the page around the stage is already its frame. */
+  presentation?: ReaderPresentation;
 }
 
 /** A file shown as what it is — reused by the full-screen viewer and the preview beside the list. */
-export function FileStage({ file, format, original, mode, onModeChange, onDownload, focus = null }: StageProperties) {
+export function FileStage({ file, format, original, mode, onModeChange, onDownload, focus = null, presentation = "framed" }: StageProperties) {
   const { t, plural } = useTranslation();
   if (original.status === "loading") {
     return <p className={`text-xs text-muted ${STAGE_MESSAGE}`}>{t("files.reading", "Reading…")}</p>;
@@ -204,6 +206,7 @@ export function FileStage({ file, format, original, mode, onModeChange, onDownlo
         focus={focus}
         page={null}
         fill
+        presentation={presentation}
         facts={
           <>
             <span>{format.description}</span>

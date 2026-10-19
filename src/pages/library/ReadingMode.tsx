@@ -117,7 +117,7 @@ export function ReadingMode({ workspaceId, file, previous, next, onOpen, onExit 
             focus={null}
             page={null}
             fill
-            bare
+            presentation="bare"
           />
         )}
         {original.status !== "loading" && original.status !== "failed" && original.status !== "ready" && (

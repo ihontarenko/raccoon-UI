@@ -30,6 +30,9 @@ const FILL = [
 
 const TOOLBAR = "flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2";
 
+/* A reader that is the page's own column: the toolbar stays, the frame goes — the page around it is the frame. */
+const OPEN = "[&_[data-reader-stage]]:rounded-none [&_[data-reader-stage]]:border-0 [&_[data-reader-stage]]:bg-transparent";
+
 /* Reading mode: no frame, no toolbar — the text alone, prose at a reading measure in the middle of the page. */
 const BARE = [
   "[&_[data-reader-stage]]:rounded-none [&_[data-reader-stage]]:border-0 [&_[data-reader-stage]]:bg-transparent",
@@ -318,12 +321,19 @@ interface OriginalReaderProperties {
   actions?: ReactNode;
   /** Fill the container's height instead of the window's, as a full-screen viewer does. */
   fill?: boolean;
-  /** Reading mode: the surface alone, without the toolbar or a frame. */
-  bare?: boolean;
+  /**
+   * How much of the reader's own chrome shows: `framed` draws its frame, `open` drops the frame where the page
+   * around it already is one, and `bare` — reading mode — drops the toolbar too.
+   */
+  presentation?: ReaderPresentation;
 }
 
+export type ReaderPresentation = "framed" | "open" | "bare";
+
+const PRESENTATION_CLASSES: Record<ReaderPresentation, string> = { framed: "", open: OPEN, bare: BARE };
+
 /** One original read as what it is, with the switch between its ways of reading where it has several. */
-export function OriginalReader({ name, format, content, mode, onModeChange, focus, page, views, viewSurface, facts, actions, fill = false, bare = false }: OriginalReaderProperties) {
+export function OriginalReader({ name, format, content, mode, onModeChange, focus, page, views, viewSurface, facts, actions, fill = false, presentation = "framed" }: OriginalReaderProperties) {
   const { t } = useTranslation();
   const modes = views ?? modesOf(format);
   const text = content.form === "text" ? content.text : null;
@@ -362,9 +372,9 @@ export function OriginalReader({ name, format, content, mode, onModeChange, focu
     surface = <p className="text-xs text-muted">{t("reader.cannotShow", "This file cannot be shown here.")}</p>;
   }
 
-  const showToolbar = !bare && (modes.length > 0 || facts !== undefined || actions !== undefined);
+  const showToolbar = presentation !== "bare" && (modes.length > 0 || facts !== undefined || actions !== undefined);
   return (
-    <div className={`${READER} ${fill ? FILL : "grid"} ${bare ? BARE : ""}`}>
+    <div className={`${READER} ${fill ? FILL : "grid"} ${PRESENTATION_CLASSES[presentation]}`}>
       {showToolbar && (
         <div className={TOOLBAR}>
           {modes.length > 0 && mode !== null && <Segmented label={t("reader.readAs", "Read as")} options={modes} value={mode} onChange={onModeChange} />}
