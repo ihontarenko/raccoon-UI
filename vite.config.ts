@@ -90,6 +90,10 @@ export default defineConfig(({ command }) => ({
         fileURLToPath(new URL("../../../jmouse-ui/packages/codemirror", import.meta.url)),
         // The linked Markdown renderer, and the dependencies it resolves from the jmouse-ui workspace.
         fileURLToPath(new URL("../../../jmouse-ui/packages/markdown", import.meta.url)),
+        // The Library's explorer, the kit it is drawn with, and the decisions about files both of them read.
+        fileURLToPath(new URL("../../../jmouse-ui/packages/explorer", import.meta.url)),
+        fileURLToPath(new URL("../../../jmouse-ui/packages/ui-kit", import.meta.url)),
+        fileURLToPath(new URL("../../../jmouse-ui/packages/file-handling", import.meta.url)),
         fileURLToPath(new URL("../../../jmouse-ui/node_modules", import.meta.url)),
       ],
     },

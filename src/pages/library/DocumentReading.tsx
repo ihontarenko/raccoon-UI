@@ -38,13 +38,15 @@ interface DocumentReadingProperties {
   onOpen: (versionId: string) => void;
   /** Reading mode for this document; absent where the page offers none. */
   onRead?: () => void;
+  /** Shows the folder the document is filed in, among its neighbours; absent where the page offers none. */
+  onShowPlace?: () => void;
 }
 
 /**
  * The document in front of the desk: what it is, the document itself read as what it is, and beside it the way
  * around it — its outline — and the way out of it — the documents that share its subject.
  */
-export function DocumentReading({ workspaceId, file, sourceName, onOpen, onRead }: DocumentReadingProperties) {
+export function DocumentReading({ workspaceId, file, sourceName, onOpen, onRead, onShowPlace }: DocumentReadingProperties) {
   const { t, language } = useTranslation();
   const format = readingFormatOf(file.name, file.effectiveMediaType);
   const original = useOriginal({ workspaceId, versionId: file.versionId, format, mediaType: file.effectiveMediaType, sizeBytes: file.sizeBytes });
@@ -192,13 +194,11 @@ export function DocumentReading({ workspaceId, file, sourceName, onOpen, onRead 
                 {formatElapsed(file.capturedAt, language)} · {t("files.preview.version", "version {number}", { number: file.versionNumber })}
               </dd>
             </dl>
-            <Link
-              to="/library"
-              search={{ mode: "files", source: file.sourceId, folder: file.folder === "" ? undefined : file.folder, pick: file.versionId }}
-              className="text-xs font-semibold text-accent-text hover:underline"
-            >
-              {t("library.showInFiles", "Show among its files →")}
-            </Link>
+            {onShowPlace !== undefined && (
+              <Button variant="quiet" flush onClick={onShowPlace}>
+                {t("library.showInFiles", "Show among its files →")}
+              </Button>
+            )}
           </section>
         </aside>
       </div>

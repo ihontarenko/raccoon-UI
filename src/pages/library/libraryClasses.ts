@@ -1,81 +1,22 @@
 /**
- * The Library's explorer: a shelf, a reading desk with tabs, and the context of the document in front.
+ * The Library: the explorer's frame, and the document read inside it with its outline and its related documents.
  *
- * ⚠️ THE DESK HAS A HEIGHT OF ITS OWN, so the reader and the outline scroll inside it while the shelf and the tabs
+ * ⚠️ THE FRAME HAS A HEIGHT OF ITS OWN, so the reader and the outline scroll inside it while the folders and the tabs
  * stay where they are — reading a long document never scrolls the tab you came from out of sight.
  */
 
 /* ── Layout ─────────────────────────────────────────────────────────────────────────────────── */
 
-export const EXPLORER = [
-  "grid grid-cols-[minmax(0,calc(260px*var(--ui-scale)))_minmax(0,1fr)] items-start gap-4",
-  "max-[900px]:grid-cols-[minmax(0,1fr)]",
-].join(" ");
-
 export const DESK_HEIGHT = "h-[max(calc(520px*var(--ui-scale)),calc(100dvh-52px*var(--ui-scale)-200px))]";
 
-/* ── Shelf ──────────────────────────────────────────────────────────────────────────────────── */
-
-export const SHELF = [
-  "sticky top-[calc(52px*var(--ui-scale)+var(--space-4))] grid min-w-0 grid-rows-[auto_auto_auto_minmax(0,1fr)] gap-2",
-  "rounded-surface border border-line bg-surface p-2",
-  DESK_HEIGHT,
-  "max-[900px]:static max-[900px]:h-auto max-[900px]:max-h-[60dvh] max-[900px]:data-[open=false]:hidden",
-].join(" ");
-
-/* The shelf's drawer handle exists only where the shelf is a drawer. */
-export const SHELF_TOGGLE = "mb-2 hidden max-[900px]:block";
-
-export const SHELF_FILTER = [
-  "relative flex items-center text-muted",
-  "[&>:first-child]:pointer-events-none [&>:first-child]:absolute [&>:first-child]:left-2",
-  "[&_input]:w-full [&_input]:pl-[calc(28px*var(--ui-scale))]",
-].join(" ");
-
-/* ⚠️ A grid item is as wide as its longest name unless told otherwise; min-w-0 lets the names truncate instead. */
-export const SHELF_DOCUMENTS = "m-0 grid min-h-0 list-none content-start gap-px overflow-y-auto overflow-x-hidden p-0 [&>li]:min-w-0";
-
-export const SHELF_HEADING = "px-1 pt-2 pb-1 text-[11px] font-semibold tracking-[0.06em] text-muted uppercase";
-
-/* One document on the shelf: its mark, its name; the one in front carries the accent stripe, open ones a dot. */
-export const SHELF_ITEM = [
-  "relative flex w-full min-w-0 items-center gap-2 rounded-[calc(3px*var(--ui-scale))] border-0 bg-transparent px-2 py-1",
-  "text-left text-xs text-secondary hover:bg-well hover:text-ink",
-  "aria-[current=true]:bg-accent-soft aria-[current=true]:font-semibold aria-[current=true]:text-ink",
-  "aria-[current=true]:before:absolute aria-[current=true]:before:inset-y-1 aria-[current=true]:before:left-0",
-  "aria-[current=true]:before:w-[2px] aria-[current=true]:before:bg-accent aria-[current=true]:before:content-['']",
-].join(" ");
-
-export const SHELF_NAME = "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap";
-
-export const OPEN_DOT = "size-1.5 flex-none rounded-full bg-accent";
-
-/* ── Desk ───────────────────────────────────────────────────────────────────────────────────── */
-
-export const DESK = [
-  /* ⚠️ Rows alone leave the column implicit, and an implicit column is auto — as wide as the longest line inside. */
-  "grid min-w-0 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-surface border border-line bg-surface",
+/* The explorer's frame: the page's one bordered surface, with the desk's height so the reader scrolls inside it. */
+export const LIBRARY_EXPLORER = [
+  "min-w-0 overflow-hidden rounded-surface border border-line",
   DESK_HEIGHT,
   "max-[900px]:h-[calc(100dvh-52px*var(--ui-scale)-120px)] max-[900px]:min-h-[calc(420px*var(--ui-scale))]",
 ].join(" ");
 
-/* Tabs read as a strip of documents: the one in front joins the page below it, the rest sit on the well. */
-export const TABS = "flex min-w-0 items-end gap-px overflow-x-auto border-b border-line bg-well px-1 pt-1";
-
-export const TAB = [
-  "group/tab flex max-w-[calc(220px*var(--ui-scale))] flex-none items-center gap-1.5 border border-b-0 border-transparent",
-  "rounded-t-[calc(3px*var(--ui-scale))] px-2 py-1.5 text-xs text-secondary",
-  "hover:bg-surface hover:text-ink",
-  "data-[active=true]:-mb-px data-[active=true]:border-line data-[active=true]:bg-surface data-[active=true]:font-semibold data-[active=true]:text-ink",
-].join(" ");
-
-export const TAB_LABEL = "min-w-0 overflow-hidden text-ellipsis whitespace-nowrap border-0 bg-transparent p-0 text-left font-[inherit] text-inherit";
-
-export const TAB_CLOSE = [
-  "grid size-[calc(18px*var(--ui-scale))] flex-none place-items-center rounded-[2px] border-0 bg-transparent p-0 text-muted",
-  "opacity-0 group-hover/tab:opacity-100 group-data-[active=true]/tab:opacity-100 focus-visible:opacity-100",
-  "hover:bg-well hover:text-ink pointer-coarse:opacity-100",
-].join(" ");
+/* ── Desk ───────────────────────────────────────────────────────────────────────────────────── */
 
 /* The document in front: its head, then the reader beside its context. */
 export const READING = "grid min-h-0 min-w-0 grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)]";
@@ -142,10 +83,7 @@ export const FACTS = [
   "[&>dt]:text-muted [&>dd]:m-0 [&>dd]:[overflow-wrap:anywhere]",
 ].join(" ");
 
-/* ── Welcome ────────────────────────────────────────────────────────────────────────────────── */
-
-export const WELCOME = "grid min-h-0 content-start gap-5 overflow-auto p-6 max-[600px]:p-4";
-
+/* A key on the keyboard, named in running text. */
 export const KEY = "rounded-[2px] border border-line-strong bg-well px-1.5 py-0.5 font-mono text-[11px] text-ink";
 
 /* ── Quick open ─────────────────────────────────────────────────────────────────────────────── */

@@ -1,20 +1,18 @@
-import type { FilesSearch } from "../files/FilesPage";
-
-/** Which way the Library shows the workspace's material: as files, or opened for reading. */
-export type LibraryMode = "files" | "explorer";
-
 /**
- * The Library's address. Both modes share the place — `source` and `folder` — so switching between them keeps where
- * you are; the explorer adds the documents open for reading, in tab order, and the one in front.
+ * The Library's address: the place being looked at, and the documents open for reading.
+ *
+ * Everything is in it, so a place or a reading session can be bookmarked or sent, and Back leaves reading mode.
  */
-export interface LibrarySearch extends FilesSearch {
-  /** Absent means the explorer: the Library opens for reading. */
-  mode?: "files";
+export interface LibrarySearch {
+  /** The source being looked at; absent is the workspace's top, where the sources are. */
+  source?: string;
+  /** A folder path inside the source; absent is the source's own top. */
+  folder?: string;
   /** Version ids of the open documents, comma-separated, in tab order. */
   open?: string;
-  /** The version id of the document in front. */
+  /** The version id of the document in front; absent shows the place. */
   active?: string;
-  /** Reading mode: the document alone, over everything. In the address, so Back leaves it. */
+  /** Reading mode: the document alone, over everything. */
   read?: true;
 }
 

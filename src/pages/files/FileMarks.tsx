@@ -3,20 +3,9 @@ import type { FileLook } from "../../lib/files";
 import { FAMILY_FILL, FAMILY_STROKE, extensionOf, familyOf, type FileFamily } from "./fileFamilies";
 import { declareText, type DeclaredText } from "../../translations/translate";
 import { useTranslation } from "../../translations/TranslationProvider";
-import { EMPTY_MARK, FILE_CORNER, FILE_GLYPH, FILE_PAGE, FILE_STAMP, FOLDER_BACK, FOLDER_FRONT, FOLDER_TAB, MARK, MARK_SIZE } from "./filesClasses";
+import { FILE_CORNER, FILE_GLYPH, FILE_PAGE, FILE_STAMP, MARK, MARK_SIZE } from "./filesClasses";
 
 type MarkSize = "small" | "large";
-
-/** A flat two-tone folder in the accent colour, so it follows whichever palette is chosen. */
-export function FolderMark({ size = "small", empty = false }: { size?: MarkSize; empty?: boolean }) {
-  return (
-    <svg viewBox="0 0 24 24" className={`${MARK} ${MARK_SIZE[size]} ${empty ? EMPTY_MARK : ""}`} aria-hidden="true">
-      <path className={FOLDER_TAB} d="M2 5.5A1.5 1.5 0 0 1 3.5 4h5.4l2 2.2H20.5A1.5 1.5 0 0 1 22 7.7V9H2z" />
-      <path className={FOLDER_BACK} d="M2 8h20v10.5a1.5 1.5 0 0 1-1.5 1.5h-17A1.5 1.5 0 0 1 2 18.5z" />
-      <path className={FOLDER_FRONT} d="M2 10.5h20v8a1.5 1.5 0 0 1-1.5 1.5h-17A1.5 1.5 0 0 1 2 18.5z" />
-    </svg>
-  );
-}
 
 /** The stamp a file without an extension wears. PDF is a format's own name and reads the same in every language. */
 const LOOK_STAMP: Record<FileLook, DeclaredText | string> = {

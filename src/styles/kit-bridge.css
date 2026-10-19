@@ -1,0 +1,102 @@
+/*
+ * The jMouse UI-kit, dressed as Raccoon.
+ *
+ * The Library's explorer is `@jmouse/explorer`, drawn with the kit's components. The kit arrives as STRUCTURE only
+ * (`@jmouse/ui-kit/structure.css`: its component rules and its vocabulary's defaults — no theme, no typefaces, no element
+ * base), and this file is the one place that says what its vocabulary means here: every `--kit-*` role a theme would
+ * name is mapped onto the Raccoon token that already means it.
+ *
+ * ⚠️ NO VALUE IS INVENTED HERE. Each line is `--kit-x: var(--raccoon-y)`, so the explorer follows data-theme,
+ * data-palette and data-scale by itself, and a change to a Raccoon token reaches the explorer with nothing else to
+ * edit. The one literal is the glyph's extension stamp, white in both modes — the same white Raccoon's own file marks
+ * stamp theirs with (`FILE_STAMP` in pages/files/filesClasses.ts).
+ *
+ * ⚠️ DECLARED ON EVERY [data-theme] AS WELL AS :root, for the reason the kit gives in its tokens: a custom property is
+ * computed where it is declared, so a region that wears the other theme must map its own.
+ *
+ * ⚠️ UNLAYERED, so it outranks the kit's own defaults (they sit in the `jmouse-ui-kit` layer) without `!important`.
+ * The kit's `--kit-*` names never meet a Raccoon token: nothing outside the explorer reads them.
+ */
+
+:root,
+[data-theme] {
+  /* size: the kit's whole geometry follows Raccoon's interface size */
+  --kit-ui-scale: var(--ui-scale);
+  --kit-space-1: var(--space-1);
+  --kit-space-2: var(--space-2);
+  --kit-space-3: var(--space-3);
+  --kit-space-4: var(--space-4);
+  --kit-space-5: var(--space-5);
+  --kit-space-6: var(--space-6);
+  --kit-space-7: var(--space-7);
+  --kit-control: var(--control);
+  --kit-control-small: var(--control-option);
+  --kit-touch-target: var(--touch-target);
+  --kit-rail: var(--rail);
+  --kit-inspector: var(--inspector);
+  --kit-radius-small: var(--radius-control);
+  --kit-radius-control: var(--radius-control);
+  --kit-radius-surface: var(--radius-surface);
+  --kit-radius-dialog: var(--radius-dialog);
+
+  /* type: the kit's ladder onto Raccoon's, step for step from the body size */
+  --kit-text-2xs: var(--text-2xs);
+  --kit-text-xs: var(--text-xs);
+  --kit-text-sm: var(--text-sm);
+  --kit-text-base: var(--text-base);
+  --kit-text-md: var(--text-md);
+  --kit-text-lg: var(--text-lg);
+  --kit-text-xl: var(--text-xl);
+  --kit-body-size: var(--text-sm);
+  --kit-font-ui: var(--font-ui);
+  --kit-font-heading: var(--font-heading);
+  --kit-font-control: var(--font-control);
+  --kit-font-technical: var(--font-mono);
+  --kit-font-code: var(--font-mono);
+
+  /* ground, ink and lines */
+  --kit-bg: var(--bg);
+  --kit-surface: var(--surface);
+  --kit-surface-2: var(--side);
+  --kit-well: var(--well);
+  --kit-ink: var(--ink);
+  --kit-secondary: var(--secondary);
+  --kit-muted: var(--muted);
+  --kit-line: var(--line);
+  --kit-line-strong: var(--line-strong);
+  --kit-scrim: var(--scrim);
+  --kit-shadow-pop: var(--shadow-dialog);
+
+  /* the accent triad and the verdicts, as Raccoon names them — not derived from bases */
+  --kit-accent: var(--accent);
+  --kit-accent-strong: var(--accent-text);
+  --kit-accent-soft: var(--accent-soft);
+  --kit-on-accent: var(--on-ink);
+  --kit-good: var(--good);
+  --kit-good-soft: var(--good-soft);
+  --kit-warn: var(--warn);
+  --kit-warn-soft: var(--warn-soft);
+  --kit-danger: var(--danger);
+  --kit-danger-soft: var(--danger-soft);
+  --kit-focus-ring: var(--accent-text);
+
+  /* "ink acts": the one filled action is ink, and turns to the accent's text tone under the pointer */
+  --kit-primary-fill: var(--ink);
+  --kit-primary-fill-hover: var(--accent-text);
+  --kit-on-primary: var(--on-ink);
+  --kit-button-hover-ground: var(--well);
+  --kit-button-hover-border: var(--accent-text);
+  --kit-selected-ground: var(--accent-soft);
+
+  /* a file's family, in Raccoon's own family colours */
+  --kit-file-document: var(--file-document);
+  --kit-file-code: var(--file-code);
+  --kit-file-data: var(--file-data);
+  --kit-file-image: var(--file-image);
+  --kit-file-audio: var(--file-media);
+  --kit-file-video: var(--file-media);
+  --kit-file-archive: var(--file-archive);
+  --kit-file-sheet: var(--file-sheet);
+  --kit-file-file: var(--file-other);
+  --kit-file-label: #ffffff;
+}

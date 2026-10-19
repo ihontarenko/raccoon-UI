@@ -107,23 +107,20 @@ const sourceRoute = createRoute({
   component: lazyRouteComponent(() => import("../pages/sources/SourcePage"), "SourcePage"),
 });
 
-/** Files and the explorer share the place in the address (source, folder), so switching modes keeps where you are. */
+/**
+ * The Library keeps its place and the documents open for reading in the address.
+ *
+ * ⚠️ Links from before the Library was one page still land: the Files mode named the file it showed over the whole
+ * screen as `file`, which now opens that document for reading. Its other keys (mode, view, order…) are dropped.
+ */
 function librarySearchOf(search: Record<string, unknown>): LibrarySearch {
+  const legacyFile = typeof search.file === "string" && search.file.length > 0 ? search.file : undefined;
+  const open = typeof search.open === "string" && search.open.length > 0 ? search.open : legacyFile;
   return {
-    mode: search.mode === "files" ? "files" : undefined,
     source: typeof search.source === "string" ? search.source : undefined,
     folder: typeof search.folder === "string" ? search.folder : undefined,
-    text: typeof search.text === "string" ? search.text : undefined,
-    view: search.view === "list" ? "list" : undefined,
-    removed: search.removed === true || search.removed === "true" ? true : undefined,
-    file: typeof search.file === "string" ? search.file : undefined,
-    pick: typeof search.pick === "string" ? search.pick : undefined,
-    order: search.order === "SIZE" || search.order === "CAPTURED" ? search.order : undefined,
-    kind: ["markdown", "text", "code", "pdf", "book", "image", "audio", "video", "none"].find(
-      (kind) => kind === search.kind,
-    ) as LibrarySearch["kind"],
-    open: typeof search.open === "string" && search.open.length > 0 ? search.open : undefined,
-    active: typeof search.active === "string" ? search.active : undefined,
+    open,
+    active: typeof search.active === "string" ? search.active : legacyFile,
     read: search.read === true || search.read === "true" ? true : undefined,
   };
 }
@@ -135,14 +132,14 @@ const libraryRoute = createRoute({
   component: lazyRouteComponent(() => import("../pages/library/LibraryPage"), "LibraryPage"),
 });
 
-// Files became the Files mode of the Library; an old link lands there with everything it carried.
+// Files became part of the Library; an old link lands there, on the same place and the same file.
 const filesRoute = createRoute({
   getParentRoute: () => shellRoute,
   path: "/files",
   validateSearch: librarySearchOf,
   component: function FilesRedirect() {
     const search = filesRoute.useSearch();
-    return <Navigate to="/library" search={{ ...search, mode: "files" }} replace />;
+    return <Navigate to="/library" search={search} replace />;
   },
 });
 

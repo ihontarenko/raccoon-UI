@@ -19,9 +19,20 @@
  * file is how an appearance axis stops reaching one screen.
  */
 
+/*
+ * ⚠️ THE KIT SITS ABOVE THE ELEMENT BASE AND BELOW THE UTILITIES. The Library's explorer is drawn with the jMouse
+ * UI-kit, whose component rules live in their own layer. Below Tailwind's `base` they would lose to the preflight
+ * (every kit button would lose its border); above `utilities` a utility could not adjust a kit part. This statement
+ * must come first: the order of layers is the order they are first named.
+ */
+@layer theme, base, jmouse-ui-kit, components, utilities;
+
 @import "tailwindcss";
 @import "./fonts.css";
 @import "./tokens.css";
+/* The kit's structure — no theme of its own — and the one file that maps its vocabulary onto ours. */
+@import "@jmouse/ui-kit/structure.css";
+@import "./kit-bridge.css";
 @import "./components.css";
 
 /*
