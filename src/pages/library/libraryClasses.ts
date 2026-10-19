@@ -1,20 +1,17 @@
 /**
  * The Library: the explorer's frame, and the document read inside it with its outline and its related documents.
  *
- * ⚠️ THE FRAME HAS A HEIGHT OF ITS OWN, so the reader and the outline scroll inside it while the folders and the tabs
+ * ⚠️ THE PAGE HAS THE WINDOW'S HEIGHT, so the reader and the outline scroll inside it while the folders and the tabs
  * stay where they are — reading a long document never scrolls the tab you came from out of sight.
  */
 
 /* ── Layout ─────────────────────────────────────────────────────────────────────────────────── */
 
-export const DESK_HEIGHT = "h-[max(calc(520px*var(--ui-scale)),calc(100dvh-52px*var(--ui-scale)-200px))]";
-
-/* The explorer's frame: the page's one bordered surface, with the desk's height so the reader scrolls inside it. */
-export const LIBRARY_EXPLORER = [
-  "min-w-0 overflow-hidden rounded-surface border border-line",
-  DESK_HEIGHT,
-  "max-[900px]:h-[calc(100dvh-52px*var(--ui-scale)-120px)] max-[900px]:min-h-[calc(420px*var(--ui-scale))]",
-].join(" ");
+/*
+ * The Library IS its page: the explorer takes the column under the topbar whole, with no frame around it, and the
+ * height of the window — so the reader is the one thing that scrolls, and the folders and the tabs stay put.
+ */
+export const LIBRARY_PAGE = "h-[calc(100dvh-52px*var(--ui-scale))] min-h-[calc(420px*var(--ui-scale))] min-w-0 overflow-hidden";
 
 /* ── Desk ───────────────────────────────────────────────────────────────────────────────────── */
 

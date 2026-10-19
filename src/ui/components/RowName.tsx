@@ -18,10 +18,16 @@ export const ROW_NAME = [
   "pointer-coarse:min-h-[44px]",
 ].join(" ");
 
-/** A list row's name, which selects the row for the inspector beside the list. */
+/**
+ * A list row's name, which selects the row for the inspector beside the list.
+ *
+ * ⚠️ STRETCHED OVER ITS ROW (`rc-row-select`, styles/components.css), the way {@link RowLink} is: a click anywhere on
+ * the row is a click on this button, and every other control in the row sits above it. The button stays the one
+ * focusable thing — Enter and Space select, and the focus ring is drawn on the row.
+ */
 export function RowName({ selected, onSelect, children }: RowNameProperties) {
   return (
-    <button type="button" className={ROW_NAME} aria-pressed={selected} onClick={onSelect}>
+    <button type="button" className={`${ROW_NAME} rc-row-select`} aria-pressed={selected} onClick={onSelect}>
       {children}
     </button>
   );

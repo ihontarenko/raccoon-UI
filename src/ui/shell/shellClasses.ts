@@ -67,6 +67,8 @@ export const TOPBAR_SIDE = "flex min-w-0 items-center gap-2";
 export const MAIN = [
   "mx-auto w-full max-w-[calc(1680px*var(--ui-scale))] flex-1 p-8 focus:outline-none",
   "max-[1200px]:p-6 max-[700px]:[padding:var(--space-5)_var(--space-4)]",
+  /* A page that IS its workspace (the Library) takes the whole column: no margin, no measure, no frame around it. */
+  "has-[[data-page-flush]]:max-w-none has-[[data-page-flush]]:p-0!",
 ].join(" ");
 
 /** One centred panel on an otherwise empty page: restoring a session, or failing to. */

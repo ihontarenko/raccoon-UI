@@ -122,6 +122,8 @@ function librarySearchOf(search: Record<string, unknown>): LibrarySearch {
     open,
     active: typeof search.active === "string" ? search.active : legacyFile,
     read: search.read === true || search.read === "true" ? true : undefined,
+    types: typeof search.types === "string" && search.types.length > 0 ? search.types : undefined,
+    removed: search.removed === true || search.removed === "true" ? true : undefined,
   };
 }
 

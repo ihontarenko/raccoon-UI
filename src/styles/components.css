@@ -22,21 +22,34 @@
  * else in the row stays clickable above it. Both of those are rules about the `<tr>` and about every
  * other control inside it — elements the page writes — so they cannot live on the link itself.
  */
-.rc-row-link::after {
+.rc-row-link::after,
+.rc-row-select::after {
   content: "";
   position: absolute;
   inset: 0;
 }
 
-tr:has(> td > .rc-row-link),
-tr:has(> td > div > .rc-row-link) {
+tr:has(> td > :is(.rc-row-link, .rc-row-select)),
+tr:has(> td > div > :is(.rc-row-link, .rc-row-select)) {
   position: relative;
   cursor: pointer;
 }
 
-tr:has(.rc-row-link) :is(a, button):not(.rc-row-link) {
+/* Every other control in the row sits above the stretched name, so a click on it is its own and never also a
+   selection. Inputs and labels count: a toggle in a row must not select the row as well. */
+tr:has(:is(.rc-row-link, .rc-row-select)) :is(a, button, input, select, textarea, label, [role="switch"], [tabindex]):not(:is(.rc-row-link, .rc-row-select)) {
   position: relative;
   z-index: 1;
+}
+
+/* The name that selects carries the row focus ring: the whole row is what it acts on. */
+tr:has(> td > .rc-row-select:focus-visible),
+tr:has(> td > div > .rc-row-select:focus-visible) {
+  outline: 2px solid var(--accent-text);
+  outline-offset: -2px;
+}
+.rc-row-select:focus-visible {
+  outline: none;
 }
 
 /* Positioned, so an absolutely placed child — a screen-reader-only header label — stays inside the

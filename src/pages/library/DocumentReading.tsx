@@ -104,10 +104,8 @@ export function DocumentReading({ workspaceId, file, sourceName, onOpen, onRead,
       <header className={READING_HEAD}>
         <FileMark size="small" look={lookOf(file)} name={file.name} />
         <div className={READING_TITLE}>
-          <h2 title={file.path}>{file.title.length > 0 ? file.title : file.name}</h2>
-          <span className="numeric text-xs text-muted">
-            {sourceName ?? "—"} / {file.path}
-          </span>
+          {/* The source and the path are the breadcrumb's to say; the head names the document by its own title. */}
+          <h2 title={`${sourceName ?? "—"} / ${file.path}`}>{file.title.length > 0 ? file.title : file.name}</h2>
         </div>
         <FileStatus file={file} />
         {onRead !== undefined && (

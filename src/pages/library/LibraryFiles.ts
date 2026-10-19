@@ -25,8 +25,10 @@ export interface LibraryFilesWords {
 
 export interface LibraryFilesSettings {
   workspaceId: string;
-  /** The reader may capture into and remove from the corpus (`document:write`). */
+  /** The reader may capture into, remove from and restore to the corpus (`document:write`). */
   mayWriteDocuments: boolean;
+  /** Removed documents are listed too, marked, and can be restored. */
+  includeRemoved: boolean;
   /** An absolute link that opens one file for reading in the Library. */
   readingLinkOf(file: FileEntry): string;
   words: LibraryFilesWords;
@@ -77,18 +79,21 @@ function fileEntryOf(file: FileEntry): ExplorerEntry {
     mediaType: file.effectiveMediaType,
     size: file.sizeBytes,
     modified: file.capturedAt,
+    removed: file.removedAt !== null,
   };
 }
 
 function foldersOf(tree: SourceTree): ExplorerEntry[] {
   return [
-    { id: sourceEntryId(tree.sourceId), parentId: null, name: tree.name, kind: "folder" },
+    // A source and a folder are sized by everything filed under them — what a listing of places is read for.
+    { id: sourceEntryId(tree.sourceId), parentId: null, name: tree.name, kind: "folder", size: tree.bytes },
     ...tree.folders.map(
       (folder): ExplorerEntry => ({
         id: folderEntryId({ sourceId: tree.sourceId, folder: folder.path }),
         parentId: folderEntryId({ sourceId: tree.sourceId, folder: folder.parent }),
         name: folder.name,
         kind: "folder",
+        size: folder.bytesBelow,
       }),
     ),
   ];
@@ -112,7 +117,7 @@ export class LibraryFiles implements ExplorerAdapter {
 
   /** The sources and their folders, read once per adapter. */
   sourceTrees(): Promise<SourceTree[]> {
-    this.trees ??= filesApi.tree(this.settings.workspaceId, false).then((trees) => {
+    this.trees ??= filesApi.tree(this.settings.workspaceId, this.settings.includeRemoved).then((trees) => {
       for (const tree of trees) {
         this.sourceKinds.set(tree.sourceId, tree.kind);
       }
@@ -167,11 +172,23 @@ export class LibraryFiles implements ExplorerAdapter {
     return fileEntryOf(this.remember(await filesApi.file(this.settings.workspaceId, versionId)));
   }
 
-  /** Takes the document out of the corpus; search no longer finds it, and the document page can restore it. */
-  async remove(entry: ExplorerEntry): Promise<void> {
+  /** Takes the document out of the corpus; search no longer finds it, and it can be restored — here, or on its page. */
+  async remove(entry: ExplorerEntry): Promise<ExplorerEntry | void> {
     const file = await this.fileOf(entry.id);
     await api.removeDocument(this.settings.workspaceId, { id: file.documentId, revision: file.versionNumber });
     this.files.delete(entry.id);
+    // Shown with the removed ones, it stays where it was — marked, and a click away from being restored.
+    if (this.settings.includeRemoved) {
+      return fileEntryOf(this.remember(await filesApi.file(this.settings.workspaceId, entry.id)));
+    }
+  }
+
+  /** Puts a removed document back into the corpus — the same act its document page offers. */
+  async restore(entry: ExplorerEntry): Promise<ExplorerEntry> {
+    const file = await this.fileOf(entry.id);
+    await api.restoreDocument(this.settings.workspaceId, file.documentId);
+    this.files.delete(entry.id);
+    return fileEntryOf(this.remember(await filesApi.file(this.settings.workspaceId, entry.id)));
   }
 
   shareUrl(entry: ExplorerEntry): string | null {
@@ -186,6 +203,9 @@ export class LibraryFiles implements ExplorerAdapter {
   permits(action: ExplorerAction, target: ExplorerTarget): boolean {
     if (action === "upload") {
       return this.settings.mayWriteDocuments && "place" in target && target.place !== null && this.takesUploads(target.place);
+    }
+    if (action === "restore") {
+      return this.settings.mayWriteDocuments;
     }
     if (action === "remove") {
       // A folder is the paths of the documents in it; there is nothing of its own to remove.
@@ -211,7 +231,11 @@ export class LibraryFiles implements ExplorerAdapter {
   private async filesIn(place: SourcePlace): Promise<FileEntry[]> {
     const collected: FileEntry[] = [];
     for (let offset = 0; ; offset += PAGE_SIZE) {
-      const page = await filesApi.list(this.settings.workspaceId, { sourceId: place.sourceId, folder: place.folder }, { limit: PAGE_SIZE, offset });
+      const page = await filesApi.list(
+        this.settings.workspaceId,
+        { sourceId: place.sourceId, folder: place.folder, includeRemoved: this.settings.includeRemoved },
+        { limit: PAGE_SIZE, offset },
+      );
       for (const file of page) {
         collected.push(this.remember(file));
       }

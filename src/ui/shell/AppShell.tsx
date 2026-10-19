@@ -22,6 +22,7 @@ import {
   TOPBAR,
 } from "./shellClasses";
 import { Topbar } from "./Topbar";
+import { ShellTrailProvider } from "./shellTrail";
 import { WorkspaceActivityProvider } from "../../application/WorkspaceActivityProvider";
 
 // The signed-in frame. It is also the gate: a visitor without a session is sent to the sign-in
@@ -177,6 +178,7 @@ function SignedInFrame({ pathname }: { pathname: string }) {
           }}
         />
       )}
+      <ShellTrailProvider>
       <div className={COLUMN}>
         <Topbar
           pathname={pathname}
@@ -194,6 +196,7 @@ function SignedInFrame({ pathname }: { pathname: string }) {
           )}
         </main>
       </div>
+      </ShellTrailProvider>
     </div>
   );
 }

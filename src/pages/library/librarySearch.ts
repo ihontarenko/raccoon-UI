@@ -1,3 +1,5 @@
+import type { FileFamily } from "@jmouse/file-handling";
+
 /**
  * The Library's address: the place being looked at, and the documents open for reading.
  *
@@ -14,8 +16,22 @@ export interface LibrarySearch {
   active?: string;
   /** Reading mode: the document alone, over everything. */
   read?: true;
+  /** The file families the listing is narrowed to, comma-separated; absent shows every file. */
+  types?: string;
+  /** Removed documents are listed too, marked, to be restored. */
+  removed?: true;
 }
 
 export function openTabsOf(search: LibrarySearch): string[] {
   return search.open === undefined ? [] : search.open.split(",").filter((identifier) => identifier.length > 0);
+}
+
+const FAMILIES: readonly FileFamily[] = ["document", "code", "data", "sheet", "image", "audio", "video", "archive", "file"];
+
+/** The families the address names, the unknown ones dropped — a mistyped link narrows nothing rather than everything. */
+export function familiesOf(search: LibrarySearch): FileFamily[] {
+  if (search.types === undefined) {
+    return [];
+  }
+  return search.types.split(",").filter((family): family is FileFamily => (FAMILIES as readonly string[]).includes(family));
 }
